@@ -9,9 +9,10 @@ const key = 'toskana-2027-selection-v1';
 const byId = new Map(catalog.map(x=>[x.id,x]));
 let state = initial, queue = Promise.resolve(), blocked = false, toastTimer;
 const clone = x => JSON.parse(JSON.stringify(x));
-const defaults = () => ({favorite:false,stars:0,note:'',month:null});
+const defaults = () => ({favorite:false,stars:0,note:'',month:null,layout:'leiste'});
 const value = id => state.items[id] || defaults();
 const status = document.getElementById('save-status');
+const previewURL = (item, month) => state.items[item.id]?.layout ? prefix+'atelier/?bild='+encodeURIComponent(item.id)+'&monat='+month+'&layout='+encodeURIComponent(value(item.id).layout) : prefix+'kalender/'+item.id+'/'+month+'/';
 function tell(text) { const t=document.getElementById('toast');t.textContent=text;t.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),5000); }
 function valid(s) {
   if(!s || s.version!==1 || s.year!==2027 || !s.items || typeof s.items!=='object' || Array.isArray(s.items)) throw Error('Bitte eine gültige Auswahl für 2027 verwenden.');
@@ -23,7 +24,8 @@ function valid(s) {
     if(v.month!==null && used.has(v.month)) throw Error('Ein Monat ist mehrfach belegt.');
     if(v.month!==null) used.add(v.month);
     if(!Number.isInteger(v.stars)||v.stars<0||v.stars>5||typeof v.favorite!=='boolean'||typeof v.note!=='string'||v.note.length>2000) throw Error('Bewertung oder Notiz ist ungültig.');
-    result.items[id]={favorite:v.favorite,stars:v.stars,note:v.note,month:v.month};
+    if(!['leiste','lichtband','seitenrand','schwebend'].includes(v.layout)) throw Error('Die Blattgestaltung ist unbekannt.');
+    result.items[id]={favorite:v.favorite,stars:v.stars,note:v.note,month:v.month,layout:v.layout};
   }
   return result;
 }
@@ -57,7 +59,7 @@ function render() {
     const item=catalog.find(i=>value(i.id).month===index+1);
     const slot=document.createElement(item?'a':'button');slot.className='month-slot'+(item?' assigned':'');
     const label=document.createElement('strong');label.textContent=month;slot.append(label);
-    if(item) {count++;slot.href=prefix+'kalender/'+item.id+'/'+(index+1)+'/';const img=document.createElement('img');img.src=prefix+'assets/'+item.asset;img.alt='';slot.append(img);const place=document.createElement('em');place.textContent=item.place;slot.append(place);slot.setAttribute('aria-label',month+': '+item.place+', Kalenderblatt ansehen');}
+    if(item) {count++;slot.href=previewURL(item,index+1);const img=document.createElement('img');img.src=prefix+'assets/'+item.asset;img.alt='';slot.append(img);const place=document.createElement('em');place.textContent=item.place;slot.append(place);slot.setAttribute('aria-label',month+': '+item.place+', Kalenderblatt ansehen');}
     else {slot.type='button';const plus=document.createElement('span');plus.textContent='+';slot.append(plus);slot.setAttribute('aria-label',month+': noch offen');slot.addEventListener('click',()=>{tell('Wähle unten bei einem Bild unter „Bewerten & zuordnen“ den Monat '+month+'.');document.querySelector('.art-grid').scrollIntoView({behavior:'smooth'});});}
     board.append(slot);
   });
@@ -69,7 +71,7 @@ function render() {
     const fav=card.querySelector('.favorite');fav.setAttribute('aria-pressed',String(v.favorite));fav.textContent=v.favorite?'♥':'♡';fav.setAttribute('aria-label',item.place+(v.favorite?' aus Favoriten entfernen':' als Favorit markieren'));
     card.querySelector('.month-select').value=v.month||'';card.querySelector('.rating').value=v.stars;
     if(document.activeElement!==card.querySelector('.note')) card.querySelector('.note').value=v.note;
-    card.querySelector('.preview-link').href=prefix+'kalender/'+item.id+'/'+(v.month||item.suggested_month)+'/';
+    card.querySelector('.preview-link').href=previewURL(item,v.month||item.suggested_month);
     card.hidden=(filter==='favorite'&&!v.favorite)||(filter==='assigned'&&!v.month);
     if(!card.hidden)visible++;
   });

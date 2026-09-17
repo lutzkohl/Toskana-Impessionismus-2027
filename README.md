@@ -4,7 +4,7 @@ Eigene Reisefotos, mit der integrierten Codex-Bildgenerierung im Stil historisch
 
 Website: https://lutzkohl.github.io/Toskana-Impessionismus-2027/
 
-Fünf erste Motive: Lucca/Renoir, Pisa/Monet, Casale Marittimo/Cézanne, Bolgheri/van Gogh und Populonia/Signac. Zu jedem Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
+Fünf Orte: Lucca, Pisa, Casale Marittimo, Bolgheri und Populonia. Im Gestaltungsatelier unter `atelier/` lassen sich vier Blattlayouts vergleichen. Populonia zeigt exemplarisch vier Ausgangsfotos und drei Maler am selben Motiv: Signac, Monet und Cézanne. Jede Monatsauswahl merkt sich Bild und Layout. Zu jedem gemalten Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
 
 Die Auswahl auf der Website wird nur im jeweiligen Browser gespeichert. Export/Import über JSON erlaubt die Übergabe an die lokale Werkstatt. Die Website selbst hat keinen Serverdienst und keine Bildgenerierungs-API.
 
@@ -12,7 +12,7 @@ Die PDFs sind A3-Gestaltungsentwürfe für 2027. Das Layout berücksichtigt die 
 
 ## Veröffentlichung
 
-GitHub Pages liefert den Branch `main`, Ordner `/`, aus. Die Dateien werden aus dem lokalen Kalender-Toskana-Projekt mit `tools/export_kalender.py` erzeugt. Veröffentlicht werden nur ausgewählte Bilder, EXIF-freie Fotokopien und Begleittexte; keine unbearbeiteten Quellen, Schlüssel oder privaten Bewertungen.
+GitHub Pages liefert den Branch `main`, Ordner `/`, aus. Die Dateien werden aus dem lokalen Kalender-Toskana-Projekt mit `tools/export_kalender.py` erzeugt. Veröffentlicht werden ausgewählte Bilder, EXIF-freie Fotokopien (für die Beispielstadt Populonia alle vier) und Begleittexte; keine unbearbeiteten Quellen, Schlüssel oder privaten Bewertungen.
 
 ## Bildnachweise
 
