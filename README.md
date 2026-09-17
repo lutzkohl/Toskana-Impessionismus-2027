@@ -4,11 +4,11 @@ Eigene Reisefotos, mit der integrierten Codex-Bildgenerierung im Stil historisch
 
 Website: https://lutzkohl.github.io/Toskana-Impessionismus-2027/
 
-Vier erste Motive: Lucca/Renoir, Pisa/Monet, Casale Marittimo/Cézanne, Bolgheri/van Gogh. Zu jedem Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
+Fünf erste Motive: Lucca/Renoir, Pisa/Monet, Casale Marittimo/Cézanne, Bolgheri/van Gogh und Populonia/Signac. Zu jedem Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
 
 Die Auswahl auf der Website wird nur im jeweiligen Browser gespeichert. Export/Import über JSON erlaubt die Übergabe an die lokale Werkstatt. Die Website selbst hat keinen Serverdienst und keine Bildgenerierungs-API.
 
-Die PDFs sind A3-Gestaltungsentwürfe für 2027. Endgültiger Beschnitt, Bindungsabstand, Farbprofil und Druckauflösung folgen nach Wahl der Druckerei. Die beispielhaften Monate sind noch keine finale Belegung.
+Die PDFs sind A3-Gestaltungsentwürfe für 2027. Das Layout berücksichtigt die SAXOPRINT-Vorlage mit 20 mm Bindungsabstand. Lokal liegt zusätzlich eine Formatprobe mit 2 mm Beschnitt. Die endgültige Bildauflösung, Farbumwandlung und PDF/X-Ausgabe folgen nach der Bildauswahl. Die beispielhaften Monate sind noch keine finale Belegung.
 
 ## Veröffentlichung
 
