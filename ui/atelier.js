@@ -122,11 +122,11 @@ function renderMatrix() {
   const onlyFavorites=$('only-favorites').checked;
   if(onlyFavorites)rows=rows.filter(s=>items.some(i=>i.source_id===s.id&&value(i.id).favorite));
   $('matrix-description').textContent=active.place+': '+sources.filter(s=>s.place_slug===city).length+' Fotos, '+items.length+' gemalte Varianten. Zum Gestalten auf ein Bild klicken.';
-  $('matrix-head').innerHTML='<tr><th scope="col">Unser Ausgangsfoto<small>Ein Motiv pro Zeile</small></th>'+artists.map(i=>`<th scope="col">${escape(i.artist.name)}<small>${escape(i.reference.title)}</small></th>`).join('')+'</tr>';
+  $('matrix-head').innerHTML='<tr><th scope="col">Unser Ausgangsfoto<small>Ein Motiv pro Zeile</small></th>'+artists.map(i=>`<th scope="col">${escape(i.artist.name)}<small>${escape(i.artist.movement)}</small></th>`).join('')+'</tr>';
   $('matrix-body').innerHTML=rows.map(source=>`<tr><th scope="row"><button type="button" class="photo-button" data-photo="${escape(source.id)}" aria-label="Ausgangsfoto ${escape(source.caption)} vergrößern"><img src="${escape(asset(source.asset))}" alt="${escape(source.caption)}" loading="lazy"></button><span class="source-caption">${escape(source.caption)}</span><span class="source-filename">${escape(source.filename || '')}</span></th>${artists.map(a=>{
     const variants=items.filter(i=>i.source_id===source.id&&i.artist.slug===a.artist.slug);
     if(!variants.length)return '<td><div class="pending-art">Noch nicht gemalt<small>Offene Kombination</small></div></td>';
-    return '<td>'+variants.map(i=>onlyFavorites&&!value(i.id).favorite?'<p class="pending-art">Kein Favorit</p>':`<button type="button" class="matrix-art" data-art="${escape(i.id)}" aria-pressed="${active.id===i.id}" aria-label="${escape(source.caption+' nach '+i.artist.name+' auswählen')}"><img src="${escape(asset(i.asset))}" alt="${escape('KI-Variante nach '+i.artist.name)}" loading="lazy"><span>${active.id===i.id?'In der Vorschau':'Im Kalender ansehen'} <b>${value(i.id).favorite?'♥':''}</b></span></button>`).join('')+'</td>';
+    return '<td>'+variants.map(i=>onlyFavorites&&!value(i.id).favorite?'<p class="pending-art">Kein Favorit</p>':`<button type="button" class="matrix-art" data-art="${escape(i.id)}" aria-pressed="${active.id===i.id}" aria-label="${escape(source.caption+' nach '+i.artist.name+' auswählen')}"><img src="${escape(asset(i.asset))}" alt="${escape('KI-Variante nach '+i.artist.name)}" loading="lazy"><small class="matrix-reference">Nach „${escape(i.reference.title)}“</small><span>${active.id===i.id?'In der Vorschau':'Im Kalender ansehen'} <b>${value(i.id).favorite?'♥':''}</b></span></button>`).join('')+'</td>';
   }).join('')}</tr>`).join('');
   $('no-favorites').hidden=rows.length>0;
 }

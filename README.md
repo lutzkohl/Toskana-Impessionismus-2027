@@ -4,7 +4,7 @@ Eigene Reisefotos, mit der integrierten Codex-Bildgenerierung im Stil historisch
 
 Website: https://lutzkohl.github.io/Toskana-Impessionismus-2027/
 
-Fünf Orte: Lucca, Pisa, Casale Marittimo, Bolgheri und Populonia. Im Gestaltungsatelier unter `atelier/` lassen sich vier Blattlayouts vergleichen. Populonia zeigt exemplarisch vier Ausgangsfotos und drei Maler am selben Motiv: Signac, Monet und Cézanne. Jede Monatsauswahl merkt sich Bild und Layout. Zu jedem gemalten Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
+Fünf Orte: Lucca, Pisa, Casale Marittimo, Bolgheri und Populonia. Im Gestaltungsatelier unter `atelier/` lassen sich vier Blattlayouts vergleichen. Populonia zeigt exemplarisch vier Ausgangsfotos mit jeweils drei Malervarianten: Signac, Monet und Cézanne – zwölf Bilder im direkten Vergleich. Jede Monatsauswahl merkt sich Bild und Layout. Zu jedem gemalten Bild gibt es eine eigene Begleitseite mit Ausgangsfoto, Stilvorbild, Malertext und Quellen. Die stabilen URLs unter `bilder/` werden für die QR-Codes des Kalenders verwendet.
 
 Die Auswahl auf der Website wird nur im jeweiligen Browser gespeichert. Export/Import über JSON erlaubt die Übergabe an die lokale Werkstatt. Die Website selbst hat keinen Serverdienst und keine Bildgenerierungs-API.
 
