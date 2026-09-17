@@ -21,7 +21,7 @@ let state = JSON.parse($('atelier-state').textContent), blocked = false, queue =
 const value = id => ({...defaults(),...state.items[id]});
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asset = path => prefix + 'assets/' + path;
-const shortArtist = item => item.artist.name.replace('Pierre-Auguste ','').replace('Claude ','').replace('Paul ','').replace('Vincent ','');
+const shortArtist = item => item.artist.name.replace('Pierre-Auguste ','').replace('Claude ','').replace('Paul ','').replace('Vincent ','').replace('Giovanni ','');
 function validState(s) {
   if(!s || s.version!==1 || s.year!==2027 || !Number.isInteger(s.revision) || s.revision<0 || !s.items || typeof s.items!=='object' || Array.isArray(s.items)) throw Error('Die gespeicherte Auswahl hat ein unbekanntes Format.');
   const clean={version:1,year:2027,revision:s.revision,items:{}}, used=new Set();
