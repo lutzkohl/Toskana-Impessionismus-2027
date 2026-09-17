@@ -10,6 +10,8 @@ Die Auswahl auf der Website wird nur im jeweiligen Browser gespeichert. Export/I
 
 Unter `bestellen/` ist eine Vorschau der Bestellseite mit 10 € je Kalender und einmalig 5 € Versand zu sehen. In der Vorschau werden keine Bestellungen, Adressen oder Zahlungen übermittelt. Die private Google-Bestellablage, Zahlungslinks, Verkäuferangaben und Liefertermin müssen vor dem Verkaufsstart eingerichtet werden. Der vorbereitete Ablauf erfasst zunächst unbezahlte Anfragen; Zahlungseingänge werden beim Zahlungsanbieter abgeglichen.
 
+Unter `rueckseite/` liegt das Schlussblatt mit Toskana-Karte, sechs Bildminiaturen und vier kommenden Reisezielen. Das offizielle Logo und ein QR-Code zur Spendenseite von Dentists for Africa ergänzen den Unterstützungstext. Die Karte basiert auf Natural Earth (Public Domain). A3- und SAXOPRINT-Formatprobe stehen als PDF bereit. Ein noch unklarer Reisestopp wird erst nach Klärung verortet.
+
 Die PDFs sind A3-Gestaltungsentwürfe für 2027. Das Layout berücksichtigt die SAXOPRINT-Vorlage mit 20 mm Bindungsabstand. Lokal liegt zusätzlich eine Formatprobe mit 2 mm Beschnitt. Die endgültige Bildauflösung, Farbumwandlung und PDF/X-Ausgabe folgen nach der Bildauswahl. Die beispielhaften Monate sind noch keine finale Belegung.
 
 ## Veröffentlichung
