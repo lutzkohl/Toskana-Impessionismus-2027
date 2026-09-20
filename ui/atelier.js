@@ -48,14 +48,67 @@ try {
   $('atelier-save-status').textContent=error.message+' Bitte den bestehenden Stand in der Bildauswahl prüfen.';
 }
 const params = new URLSearchParams(location.search);
-let active = byId.get(params.get('bild')) || byId.get('populonia-signac-saint-tropez') || catalog[0];
-let city = active.place_slug;
+const linkedImage = byId.get(params.get('bild'));
 let month = Number(params.get('monat'));
-if(!Number.isInteger(month)||month<1||month>12) month=value(active.id).month || active.suggested_month;
-let layout = layoutById.has(params.get('layout')) ? params.get('layout') : value(active.id).layout;
+if(!Number.isInteger(month)||month<1||month>12) month=linkedImage?(value(linkedImage.id).month||linkedImage.suggested_month):nextOpenMonth()||1;
+let active = linkedImage || catalog.find(i=>value(i.id).month===month) || null;
+let city = active?.place_slug || '', artist = active?.artist.slug || '';
+let layout = layoutById.has(params.get('layout')) ? params.get('layout') : active?value(active.id).layout:'leiste';
+const ready = () => !!active && active.place_slug===city && active.artist.slug===artist;
 const cities = [...new Map(catalog.map(item=>[item.place_slug,item.place])).entries()];
 cities.sort((a,b)=>a[1].localeCompare(b[1],'de'));
-$('city-select').innerHTML=cities.map(([id,name])=>`<option value="${escape(id)}">${escape(name)}</option>`).join('');
+function nextOpenMonth(after=0) {return Array.from({length:12},(_,i)=>(after+i)%12+1).find(m=>!catalog.some(i=>value(i.id).month===m));}
+function chooseMonth(nextMonth) {
+  month=nextMonth;active=catalog.find(i=>value(i.id).month===month)||null;
+  city=active?.place_slug||'';artist=active?.artist.slug||'';layout=active?value(active.id).layout:'leiste';
+  if(!blocked)message('');render();
+}
+function placeUsage(slug) {
+  if(byId.get(policy.cover_image_id)?.place_slug===slug)return 'Titelseite';
+  const used=catalog.find(i=>i.place_slug===slug&&value(i.id).month&&value(i.id).month!==month&&(!ready()||i.id!==active.id));
+  return used?months[value(used.id).month-1]:null;
+}
+function renderFlow() {
+  const assigned=catalog.find(i=>value(i.id).month===month);
+  const saved=ready()&&assigned?.id===active.id&&value(active.id).layout===layout;
+  for(const option of $('atelier-month').options) {
+    const item=catalog.find(i=>value(i.id).month===Number(option.value));
+    option.textContent=months[Number(option.value)-1]+(item?' · '+item.place+' / '+shortArtist(item):' · noch offen');
+  }
+  $('atelier-month').value=month;
+  $('month-hint').textContent=assigned?'Gespeichert: '+assigned.place+' nach '+shortArtist(assigned)+'. Du kannst diese Auswahl bearbeiten.':'Für '+months[month-1]+' ist noch kein Motiv gespeichert.';
+  $('city-select').innerHTML='<option value="">Ort wählen …</option>'+cities.map(([slug,name])=>{
+    const used=placeUsage(slug);
+    return `<option value="${escape(slug)}" ${used?'disabled':''}>${escape(name+(used?' · belegt: '+used:''))}</option>`;
+  }).join('');
+  $('city-select').value=city;
+  $('city-hint').textContent=city?(placeUsage(city)?'Dieser Ort ist bereits für '+placeUsage(city)+' reserviert.':months[month-1]+' bleibt gewählt.'+(artist?'':' Jetzt den Maler auswählen.')):'Jeder Ort einmal. Vergebene Orte sind gesperrt; im Jahresplan kannst du sie bearbeiten.';
+  const choices=catalog.filter(i=>i.place_slug===city&&($('show-all-variants').checked||curated(i)||i.artist.slug===artist));
+  const painters=[...new Map(choices.map(i=>[i.artist.slug,i])).values()];
+  $('artist-select').disabled=!city;
+  $('artist-select').innerHTML=`<option value="">${city?'Maler wählen …':'Zuerst einen Ort wählen'}</option>`+painters.map(i=>{
+    const conflict=clashes(i)[0];
+    return `<option value="${escape(i.artist.slug)}" ${conflict?'disabled':''}>${escape(i.artist.name+(conflict?' · belegt: '+(conflict.month==='cover'?'Titel':months[conflict.month-1]):''))}</option>`;
+  }).join('');
+  $('artist-select').value=artist;
+  $('artist-hint').textContent=ready()?'Dein Motiv und die Blattvorschau stehen unten.':city?'Nach der Malerwahl erscheinen die zugehörigen Motive.':'Die passenden Maler werden nach der Ortswahl angezeigt.';
+  $('flow-summary').textContent=(ready()?(saved?'Gespeichert: ':'Noch nicht gespeichert: '):'Deine Auswahl: ')+months[month-1]+' → '+(cities.find(([slug])=>slug===city)?.[1]||'Ort wählen')+' → '+(ready()?shortArtist(active):'Maler wählen');
+  $('flow-summary').classList.toggle('is-saved',saved);
+  $('flow-empty').hidden=ready();
+  $('flow-empty').textContent=city?'Wähle jetzt oben in Schritt 3 einen Maler. Danach erscheinen die Motive aus '+cities.find(([slug])=>slug===city)[1]+'.':'Wähle oben in Schritt 2 einen Ort für '+months[month-1]+'. Danach geht es mit dem Maler weiter.';
+  $('motif-choice').hidden=!ready();$('entwurf').hidden=!ready();$('layout-chooser').hidden=!ready();$('vergleich').hidden=!city;
+  $('next-month').hidden=!saved||!nextOpenMonth();
+  $('move-choice').hidden=!saved;
+  for(const option of $('move-month').options)option.disabled=Number(option.value)===month;
+  if(Number($('move-month').value)===month)$('move-month').value='';
+  $('prepare-move').disabled=!$('move-month').value;
+  $('draft-label').textContent=months[month-1]+' 2027 · '+(saved?'Gespeichert':'Dein Entwurf');
+  $('chosen-layout').textContent=layoutById.get(layout).name;
+  const url=new URL(location.href);url.searchParams.set('monat',month);
+  if(ready()){url.searchParams.set('bild',active.id);url.searchParams.set('layout',layout);}
+  else{url.searchParams.delete('bild');url.searchParams.delete('layout');}
+  history.replaceState(null,'',url);
+}
 function message(text) { $('atelier-save-status').textContent=text; }
 function persist() {
   if(blocked) {message('Speichern angehalten. Auswahl exportieren und Seite neu laden.');return;}
@@ -101,25 +154,29 @@ function paper(kind, interactive=false) {
   </article>`;
 }
 function renderPreview() {
+  if(!ready())return;
   $('large-preview').innerHTML=paper(layout,true);
   $('modal-preview').innerHTML=paper(layout,true);
   $('preview-label').textContent=active.place+' nach '+shortArtist(active);
   $('layout-caption').textContent=layoutById.get(layout).description;
   $('layout-options').innerHTML=layouts.map(l=>`<button type="button" class="layout-option" data-layout="${l.id}" aria-pressed="${layout===l.id}" aria-label="${l.name}: ${l.short}"><div class="paper-frame" aria-hidden="true">${paper(l.id)}</div><strong>${l.name}</strong><span>${l.short}</span></button>`).join('');
-  $('atelier-month').value=month;
-  $('save-combination').textContent='Für '+months[month-1]+' vormerken';
-  $('city-select').value=city;
+  $('save-combination').textContent='Für '+months[month-1]+' speichern';
   $('active-place').textContent=active.place;
   const source=sources.find(s=>s.id===active.source_id);
   $('active-motif').textContent=source ? source.caption : active.source_caption;
   $('active-reference').textContent='Nach „'+active.reference.title+'“, '+active.reference.year;
-  const siblings=catalog.filter(x=>x.source_id===active.source_id&&offered(x));
-  $('painter-options').innerHTML=siblings.map(item=>`<button type="button" class="painter-option" data-art="${escape(item.id)}" aria-pressed="${item.id===active.id}"><img src="${escape(asset(item.asset))}" alt=""><span>${escape(shortArtist(item))}${clashes(item).length?' · belegt':''}</span></button>`).join('') || '<p class="choice-hint">Für dieses Foto ist gerade kein freier Vorschlag vorhanden. Weitere Motive findest du unten im Vergleich.</p>';
+  const siblings=catalog.filter(x=>x.place_slug===city&&x.artist.slug===artist);
+  $('motif-choice').hidden=siblings.length<2;
+  $('motif-description').textContent=active.place+' nach '+active.artist.name+' · '+(siblings.length===1?'Ein Motiv ist vorbereitet.':siblings.length+' Motive zur Auswahl. Klicke auf dein Wunschbild.');
+  $('painter-options').innerHTML=siblings.map(item=>{
+    const caption=sources.find(s=>s.id===item.source_id)?.caption||item.source_caption;
+    return `<button type="button" class="motif-option" data-art="${escape(item.id)}" aria-pressed="${item.id===active.id}" aria-label="${escape(caption+' auswählen')}"><img src="${escape(asset(item.asset))}" alt="${escape(caption)}" loading="lazy"><strong>${item.id===active.id?'✓ Ausgewähltes Motiv':'Dieses Motiv ansehen'}</strong><span>${escape(caption)}</span></button>`;
+  }).join('');
   $('favorite-combination').textContent=value(active.id).favorite?'♥ Als Favorit markiert':'♡ Bild als Favorit';
   $('favorite-combination').setAttribute('aria-pressed',String(value(active.id).favorite));
-  const url=new URL(location.href);url.searchParams.set('bild',active.id);url.searchParams.set('monat',month);url.searchParams.set('layout',layout);history.replaceState(null,'',url);
 }
 function renderMatrix() {
+  if(!city)return;
   const allItems=catalog.filter(i=>i.place_slug===city);
   const onlyFavorites=$('only-favorites').checked;
   const items=allItems.filter(i=>offered(i)&&(!onlyFavorites||value(i.id).favorite));
@@ -129,12 +186,12 @@ function renderMatrix() {
   if(!rows.length) rows=[...new Map(items.map(i=>[i.source_id,{id:i.source_id,asset:i.photo_asset,caption:i.source_caption,filename:'Ausgangsfoto'}])).values()];
   rows.sort((a,b)=>Number(items.some(i=>i.source_id===b.id))-Number(items.some(i=>i.source_id===a.id)));
   rows=rows.filter(s=>items.some(i=>i.source_id===s.id));
-  $('matrix-description').textContent=active.place+': '+items.length+($('show-all-variants').checked?' angezeigte Varianten (auch frühere und belegte)':' passende Varianten von '+artists.length+' Malern für '+months[month-1])+'. Insgesamt '+allItems.length+' Varianten im Archiv.';
+  $('matrix-description').textContent=cities.find(([slug])=>slug===city)[1]+': '+items.length+($('show-all-variants').checked?' angezeigte Varianten (auch frühere und belegte)':' passende Varianten von '+artists.length+' Malern für '+months[month-1])+'. Insgesamt '+allItems.length+' Varianten im Archiv.';
   $('matrix-head').innerHTML='<tr><th scope="col">Unser Ausgangsfoto<small>Ein Motiv pro Zeile</small></th>'+artists.map(i=>`<th scope="col">${escape(i.artist.name)}<small>${escape(i.artist.movement)}</small></th>`).join('')+'</tr>';
   $('matrix-body').innerHTML=rows.map(source=>`<tr><th scope="row"><button type="button" class="photo-button" data-photo="${escape(source.id)}" aria-label="Ausgangsfoto ${escape(source.caption)} vergrößern"><img src="${escape(asset(source.asset))}" alt="${escape(source.caption)}" loading="lazy"></button><span class="source-caption">${escape(source.caption)}</span><span class="source-filename">${escape(source.filename || '')}</span></th>${artists.map(a=>{
     const variants=items.filter(i=>i.source_id===source.id&&i.artist.slug===a.artist.slug);
     if(!variants.length)return '<td><div class="pending-art">—<small>Andere Handschrift für dieses Motiv</small></div></td>';
-    return '<td>'+variants.map(i=>`<button type="button" class="matrix-art ${clashes(i).length?'is-unavailable':''}" data-art="${escape(i.id)}" aria-pressed="${active.id===i.id}" aria-label="${escape(source.caption+' nach '+i.artist.name+' auswählen')}"><img src="${escape(asset(i.asset))}" alt="${escape('KI-Variante nach '+i.artist.name)}" loading="lazy"><small class="matrix-reference">Nach „${escape(i.reference.title)}“</small><span>${clashes(i).length?escape(clashes(i).map(c=>c.label).join(' ')):active.id===i.id?'In der Vorschau':'Im Kalender ansehen'} <b>${value(i.id).favorite?'♥':''}</b></span></button>`).join('')+'</td>';
+    return '<td>'+variants.map(i=>`<button type="button" class="matrix-art ${clashes(i).length?'is-unavailable':''}" data-art="${escape(i.id)}" aria-pressed="${active?.id===i.id}" aria-label="${escape(source.caption+' nach '+i.artist.name+' auswählen')}"><img src="${escape(asset(i.asset))}" alt="${escape('KI-Variante nach '+i.artist.name)}" loading="lazy"><small class="matrix-reference">Nach „${escape(i.reference.title)}“</small><span>${clashes(i).length?escape(clashes(i).map(c=>c.label).join(' ')):active?.id===i.id?'In der Vorschau':'Im Kalender ansehen'} <b>${value(i.id).favorite?'♥':''}</b></span></button>`).join('')+'</td>';
   }).join('')}</tr>`).join('');
   $('no-favorites').hidden=rows.length>0;
   $('no-favorites').textContent=onlyFavorites?'Keine passenden Favoriten. Schalte den Favoritenfilter aus oder öffne die früheren und belegten Varianten.':'Für '+months[month-1]+' ist hier kein freier Vorschlag verfügbar. Wähle einen anderen Ort oder bearbeite die Belegung im Jahresplan.';
@@ -149,31 +206,28 @@ function renderAvailability() {
     const used=occupied.find(x=>x.artist.slug===i.artist.slug);
     return `<span class="artist-chip ${used?'is-used':''}"><strong>${escape(shortArtist(i))}</strong><small>${used?escape(used===cover?'Titel · '+used.place:months[value(used.id).month-1]+' · '+used.place):'frei'}</small></span>`;
   }).join('');
-  const conflicts=clashes(active);
-  $('save-combination').disabled=blocked||conflicts.length>0;
+  const conflicts=ready()?clashes(active):[];
+  $('save-combination').disabled=blocked||!ready()||conflicts.length>0;
   $('combination-availability').classList.toggle('is-conflict',conflicts.length>0);
   $('combination-availability').textContent=conflicts.length?conflicts.map(c=>c.label).join(' ')+(conflicts.some(c=>c.month==='cover')?' Für den Titel reserviert. Wähle einen anderen Ort und Maler.':' Gib die bisherige Belegung im Jahresplan frei, um neu zuzuordnen.'):'Ort und Maler sind für '+months[month-1]+' verfügbar.';
-  for(const option of $('city-select').options) {
-    const used=occupied.find(i=>i.place_slug===option.value),name=cities.find(([id])=>id===option.value)[1];
-    option.textContent=name+(used?' · '+(used===cover?'Titel':months[value(used.id).month-1]):'');
-  }
+  if(ready()&&value(active.id).month&&value(active.id).month!==month&&!conflicts.length)$('combination-availability').textContent='Beim Speichern wird dieses Motiv von '+months[value(active.id).month-1]+' nach '+months[month-1]+' verschoben.';
 }
 function renderYear() {
   const count=catalog.filter(i=>value(i.id).month).length;
   $('year-count').textContent=count+' / 12';
   $('atelier-months').innerHTML=months.map((name,index)=>{
     const item=catalog.find(i=>value(i.id).month===index+1);
-    return `<div class="year-month ${item?'is-assigned':''}"><button type="button" class="year-open" data-month="${index+1}" ${item?`data-id="${escape(item.id)}"`:''} aria-label="${name}: ${item?escape(item.place+', bearbeiten'):'noch offen, gestalten'}"><strong>${name}</strong>${item?`<span class="month-art"><img src="${escape(asset(item.asset))}" alt=""><small>${escape(item.place)}<br>${escape(shortArtist(item))}<br>${layoutById.get(value(item.id).layout).name}</small></span>`:'<span class="empty-month">+ Motiv wählen</span>'}</button>${item?`<button type="button" class="year-remove" data-remove="${escape(item.id)}" aria-label="${name} wieder freigeben">×</button>`:''}</div>`;
+    return `<div class="year-month ${item?'is-assigned':''} ${month===index+1?'is-current':''}"><button type="button" class="year-open" data-month="${index+1}" ${item?`data-id="${escape(item.id)}"`:''} aria-label="${name}: ${item?escape(item.place+', bearbeiten'):'noch offen, gestalten'}"><strong>${name}</strong>${item?`<span class="month-art"><img src="${escape(asset(item.asset))}" alt=""><small>${escape(item.place)}<br>${escape(shortArtist(item))}<br>${layoutById.get(value(item.id).layout).name}</small></span>`:'<span class="empty-month">+ Motiv wählen</span>'}</button>${item?`<button type="button" class="year-remove" data-remove="${escape(item.id)}" aria-label="${name} wieder freigeben">×</button>`:''}</div>`;
   }).join('');
 }
-function render() {renderPreview();renderMatrix();renderYear();renderAvailability();}
-function selectImage(id) {if(!byId.has(id))return;active=byId.get(id);city=active.place_slug;render();}
+function render() {renderFlow();renderPreview();renderMatrix();renderYear();renderAvailability();}
+function selectImage(id) {if(!byId.has(id))return;active=byId.get(id);city=active.place_slug;artist=active.artist.slug;if(!blocked)message('');render();}
 function openPhoto(source) {
   const box=$('lightbox');box.querySelector('img').src=asset(source.asset);box.querySelector('img').alt=source.caption;box.querySelector('p').textContent=source.caption;box.showModal();
 }
 $('layout-options').addEventListener('click',event=>{
   const button=event.target.closest('[data-layout]');if(!button)return;
-  layout=button.dataset.layout;renderPreview();
+  layout=button.dataset.layout;render();
   // Keep keyboard focus on the selected option after replacing the previews.
   $('layout-options').querySelector(`[data-layout="${layout}"]`).focus({preventScroll:true});
 });
@@ -184,16 +238,26 @@ $('matrix-body').addEventListener('click',event=>{
   if(photo){const source=sources.find(s=>s.id===photo.dataset.photo);if(source)openPhoto(source);}
 });
 $('city-select').addEventListener('change',event=>{
-  const items=catalog.filter(i=>i.place_slug===event.target.value),assigned=items.find(i=>value(i.id).month);
-  if(assigned){month=value(assigned.id).month;layout=value(assigned.id).layout;}
-  selectImage((assigned||items.find(i=>curated(i)&&!clashes(i).length)||items.find(curated)||items[0]).id);
+  city=event.target.value;artist='';active=null;if(!blocked)message('');render();
 });
-$('atelier-month').addEventListener('change',event=>{month=Number(event.target.value);render();});
+$('artist-select').addEventListener('change',event=>{
+  artist=event.target.value;active=catalog.find(i=>i.place_slug===city&&i.artist.slug===artist)||null;
+  if(!blocked)message('');render();
+});
+$('atelier-month').addEventListener('change',event=>chooseMonth(Number(event.target.value)));
+$('next-month').addEventListener('click',()=>{const next=nextOpenMonth(month);if(next){chooseMonth(next);$('auswahl-schritte').scrollIntoView({behavior:'instant'});$('city-select').focus({preventScroll:true});}});
+$('move-month').addEventListener('change',()=>{$('prepare-move').disabled=!$('move-month').value;});
+$('prepare-move').addEventListener('click',()=>{
+  if(!ready()||!$('move-month').value)return;
+  month=Number($('move-month').value);$('move-month').value='';if(!blocked)message('');render();
+  $('auswahl-schritte').scrollIntoView({behavior:'instant'});
+});
 $('only-favorites').addEventListener('change',renderMatrix);
-$('show-all-variants').addEventListener('change',()=>{renderPreview();renderMatrix();});
+$('show-all-variants').addEventListener('change',render);
 $('favorite-combination').addEventListener('click',()=>{if(blocked)return message('Bitte erst den Speicherstand prüfen.');state.items[active.id]={...value(active.id),favorite:!value(active.id).favorite};render();persist();});
 $('save-combination').addEventListener('click',()=>{
   if(blocked)return message('Bitte erst den Speicherstand prüfen.');
+  if(!ready())return message('Bitte zuerst Monat, Ort und Maler wählen.');
   if(clashes(active).length)return message(clashes(active).map(c=>c.label).join(' '));
   const occupied=catalog.find(i=>i.id!==active.id&&value(i.id).month===month);
   if(occupied&&!confirm(months[month-1]+' ist mit '+occupied.place+' nach '+shortArtist(occupied)+' belegt. Durch die aktuelle Auswahl ersetzen?'))return;
@@ -207,9 +271,7 @@ $('atelier-months').addEventListener('click',event=>{
   const remove=event.target.closest('[data-remove]');
   if(remove){if(blocked)return;state.items[remove.dataset.remove]={...value(remove.dataset.remove),month:null};render();persist();return;}
   const button=event.target.closest('[data-month]');if(!button)return;
-  month=Number(button.dataset.month);
-  if(button.dataset.id){active=byId.get(button.dataset.id);city=active.place_slug;layout=value(active.id).layout;}
-  render();$('entwurf').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+  chooseMonth(Number(button.dataset.month));$('auswahl-schritte').scrollIntoView({behavior:'instant'});$('atelier-month').focus({preventScroll:true});
 });
 $('atelier-export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)+'\n'],{type:'application/json'}));
@@ -224,5 +286,6 @@ $('atelier-print').addEventListener('click',()=>window.print());
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
 window.addEventListener('storage',event=>{if(event.key===storageKey&&!local){blocked=true;renderAvailability();message('Die Auswahl wurde in einem anderen Fenster geändert. Bitte neu laden.');}});
 render();
+if(location.hash==='#vergleich'&&city)$('vergleich').open=true;
 try {rules.assertUnique(state,catalog,policy.cover_image_id);} catch(error){message('Im bisherigen Stand gibt es doppelte Belegungen. Bitte im Jahresplan auflösen: '+error.message);}
 })();

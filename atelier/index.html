@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#243b36">
   <title>Gestaltungsatelier · Toskana 2027</title>
   <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/style.css">
-  <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/atelier.css?v=435d489bad2e">
+  <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/atelier.css?v=c26b9035a5c4">
 </head>
 <body data-mode="public" data-prefix="/Toskana-Impessionismus-2027/">
 <a class="skip" href="#main">Zum Inhalt</a>
@@ -25,45 +25,52 @@
 
 <main id="main" class="atelier">
   <header class="atelier-intro">
-    <div><h1>Jeder Ort. Eine Handschrift.</h1><p>Zwölf Monate, zwölf unterschiedliche Orte und Maler.</p></div>
-    <label class="city-control">Unser Reiseort<select id="city-select" aria-label="Stadt auswählen"></select></label>
+    <div><h1>Dein Kalender.<br>Monat für Monat.</h1><p>Wähle zuerst den Monat, dann den Ort und den Maler.</p></div>
+    <a class="quiet-button" href="#jahr">Zum gesamten Jahresplan <span id="year-count">0 / 12</span></a>
   </header>
-  <section class="diversity-overview" aria-label="Orte und Maler im Kalender"><p id="diversity-summary"></p><div id="artist-availability" class="artist-availability"></div><p class="small">Pro Ort eine kleine Auswahl passender Maler. Belegte Orte und Maler stehen für andere Monate nicht mehr zur Verfügung. Lucca und Renoir sind für die Titelseite reserviert.</p></section>
-  <nav class="atelier-nav" aria-label="Im Atelier"><a href="#entwurf">Blatt gestalten</a><a href="#vergleich">Fotos &amp; Maler vergleichen</a><a href="#jahr">Jahresauswahl <span id="year-count">0 / 12</span></a></nav>
+  <section id="auswahl-schritte" class="selection-flow" aria-label="Monat, Ort und Maler wählen">
+    <div class="selection-step"><label for="atelier-month"><span class="step-number">1</span> Monat wählen</label><select id="atelier-month" aria-describedby="month-hint"><option value="1">Januar</option><option value="2">Februar</option><option value="3">März</option><option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option></select><p id="month-hint" class="step-hint"></p></div>
+    <div class="selection-step"><label for="city-select"><span class="step-number">2</span> Ort wählen</label><select id="city-select" aria-describedby="city-hint"></select><p id="city-hint" class="step-hint">Bereits vergebene Orte sind gekennzeichnet.</p></div>
+    <div class="selection-step"><label for="artist-select"><span class="step-number">3</span> Maler wählen</label><select id="artist-select" aria-describedby="artist-hint" disabled><option value="">Zuerst einen Ort wählen</option></select><p id="artist-hint" class="step-hint"></p></div>
+    <div class="flow-footer"><p id="flow-summary" role="status"></p><label class="favorites-filter"><input id="show-all-variants" type="checkbox"> Auch frühere Malervarianten anbieten</label></div>
+  </section>
+  <p id="flow-empty" class="flow-empty">Wähle einen Ort für deinen Monat. Danach kannst du die Maler und Motive vergleichen.</p>
+  <section id="motif-choice" class="motif-choice" aria-labelledby="motif-heading" hidden><div class="atelier-section-title"><div><h2 id="motif-heading">Dein Motiv</h2><p id="motif-description"></p></div><a class="quiet-button" href="#entwurf">Zur Blattvorschau</a></div><div id="painter-options" class="motif-options"></div></section>
   <section id="entwurf" class="design-workspace" aria-label="Kalenderblatt gestalten">
     <div class="preview-column">
       <div class="preview-meta"><span id="preview-label">Populonia</span><span>A3 quer · 2027</span></div>
       <div class="preview-desk"><div id="large-preview" class="paper-frame" aria-live="polite"></div></div>
       <div class="preview-caption"><p id="layout-caption"></p><button type="button" id="enlarge-preview" class="quiet-button">Groß ansehen</button></div>
     </div>
-    <aside class="design-controls" aria-label="Bild und Monat wählen">
-      <h2 id="active-place">Populonia</h2><p id="active-motif"></p>
-      <fieldset class="painter-controls"><legend>Die Handschrift</legend><div id="painter-options"></div></fieldset>
+    <aside class="design-controls" aria-label="Auswahl prüfen und speichern">
+      <p id="draft-label" class="selection-caption"></p><h2 id="active-place">Populonia</h2><p id="active-motif"></p>
       <p id="active-reference" class="active-reference"></p>
       <button type="button" id="open-origins" class="quiet-button">Ausgangsfoto &amp; Vorbild ansehen</button>
-      <div class="month-control"><label for="atelier-month">Für welchen Monat?</label><select id="atelier-month"><option value="1">Januar</option><option value="2">Februar</option><option value="3">März</option><option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option></select></div>
       <p id="combination-availability" class="combination-availability" role="status"></p>
-      <button type="button" id="save-combination" class="button">Für Juli vormerken</button>
+      <button type="button" id="save-combination" class="button">Für diesen Monat speichern</button>
+      <button type="button" id="next-month" class="quiet-button" hidden>Nächsten offenen Monat gestalten</button>
+      <details id="move-choice" class="move-choice" hidden><summary>Dieses Motiv verschieben</summary><label for="move-month">Zielmonat</label><select id="move-month"><option value="">Monat wählen …</option><option value="1">Januar</option><option value="2">Februar</option><option value="3">März</option><option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option></select><button type="button" id="prepare-move" class="quiet-button" disabled>Verschieben vorbereiten</button><p>Die bisherige Zuordnung bleibt bis zum Speichern erhalten.</p></details>
       <button type="button" id="favorite-combination" class="quiet-button">♡ Bild als Favorit</button>
-      <p id="atelier-save-status" class="small" role="status"></p>
     </aside>
   </section>
-  <section class="layout-chooser" aria-labelledby="layouts-heading">
+  <p id="atelier-save-status" class="small" role="status"></p>
+  <details id="layout-chooser" class="layout-chooser"><summary>Blattgestaltung ändern <span id="chosen-layout"></span></summary>
     <div class="atelier-section-title"><h2 id="layouts-heading">Vier Arten, den Monat zu zeigen</h2><p>Gleiches Bild. Gleicher Monat. Andere Aufteilung.</p></div>
     <div id="layout-options" class="layout-options"></div>
     <p class="print-hint">Alle Entwürfe lassen oben 20 mm Platz für die Bindung. QR-Codes: 21–24 mm mit weißem Rand. Die Vorschau zeigt die Gestaltung; Druckauflösung und Farbprofil werden vor dem Druck finalisiert.</p>
-  </section>
-  <section id="vergleich" class="comparison-workspace" aria-labelledby="matrix-heading">
-    <div class="atelier-section-title"><div><h2 id="matrix-heading">Vorschläge für diesen Ort</h2><p id="matrix-description"></p></div><div class="comparison-filters"><label class="favorites-filter"><input id="only-favorites" type="checkbox"> Nur Favoriten</label><label class="favorites-filter"><input id="show-all-variants" type="checkbox"> Auch frühere und belegte Varianten</label></div></div>
+  </details>
+  <details id="vergleich" class="comparison-workspace"><summary>Fotos und Maler im Detail vergleichen</summary>
+    <div class="atelier-section-title"><div><h2 id="matrix-heading">Vorschläge für diesen Ort</h2><p id="matrix-description"></p></div><div class="comparison-filters"><label class="favorites-filter"><input id="only-favorites" type="checkbox"> Nur Favoriten</label></div></div>
     <div class="matrix-scroll" tabindex="0" aria-label="Vergleichstabelle, auf kleinen Bildschirmen seitlich scrollbar"><table class="motif-matrix"><caption class="sr-only">Ausgangsfotos als Zeilen, Maler als Spalten. Ein gemaltes Bild wählen, um es im Kalender zu sehen.</caption><thead id="matrix-head"></thead><tbody id="matrix-body"></tbody></table></div>
     <p id="no-favorites" class="empty-message" hidden></p>
-    <p class="matrix-note">Die Vorschläge beschränken sich auf die für diesen Ort vorgesehenen Maler. Frühere Versuche bleiben erhalten. Ein Bild anklicken, um es auszuprobieren; erst „vormerken“ belegt den Monat.</p>
-  </section>
+    <p class="matrix-note">Ein Bild anklicken, um es im oben gewählten Monat auszuprobieren. Erst „Für diesen Monat speichern“ übernimmt die Auswahl.</p>
+  </details>
   <section id="jahr" class="atelier-year" aria-labelledby="year-heading">
-    <div class="atelier-section-title"><div><h2 id="year-heading">Unser Jahr, Stück für Stück</h2><p>Jeder Monat merkt sich Bild und Blattgestaltung.</p></div><button type="button" id="atelier-export" class="button secondary">Auswahl exportieren</button></div>
+    <div class="atelier-section-title"><div><h2 id="year-heading">Dein Jahresplan</h2><p>Ein Monat anklicken, um ihn oben zu gestalten oder zu bearbeiten.</p></div><button type="button" id="atelier-export" class="button secondary">Auswahl exportieren</button></div>
     <div id="atelier-months" class="atelier-months"></div>
     <p class="small">Die Auswahl bleibt in diesem Browser. Zum Weitergeben exportieren und in der Bildauswahl importieren. <a href="/Toskana-Impessionismus-2027/titelseite/">Titelseite mit Lucca</a> und <a href="/Toskana-Impessionismus-2027/rueckseite/">Rückseite mit Reisekarte</a> ergänzen die zwölf Monate.</p>
   </section>
+  <details class="diversity-overview"><summary>Welche Maler sind schon vergeben?</summary><p id="diversity-summary"></p><div id="artist-availability" class="artist-availability"></div><p class="small">Jeder Ort und jeder Maler kommt nur einmal vor. Lucca und Renoir sind für die Titelseite reserviert.</p></details>
   <noscript><p>Bitte JavaScript aktivieren, um Bilder und Blattvarianten zu vergleichen. <a href="/Toskana-Impessionismus-2027/">Die Bildgalerie</a> funktioniert auch ohne.</p></noscript>
 </main>
 <dialog id="origins-dialog" class="origins-dialog" aria-labelledby="origins-title"><button class="close-dialog" type="button" data-close>Schließen ×</button><h2 id="origins-title">Wo das Bild herkommt</h2><div id="origins-content"></div></dialog>
@@ -76,6 +83,6 @@
 <footer class="site-footer"><p>Eigene Reisefotos. Historische Vorbilder. Mit KI neu gemalt.</p><p>Impressionismus und seine Weiterentwicklungen · Toskana 2027</p></footer>
 <dialog id="lightbox" aria-label="Bildansicht"><button type="button" class="close-dialog" aria-label="Bildansicht schließen">Schließen ×</button><img alt=""><p></p></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="/Toskana-Impessionismus-2027/ui/selection-rules.js?v=a5a81c058500" defer></script><script src="/Toskana-Impessionismus-2027/ui/atelier.js?v=05b14e8d2cc2" defer></script>
+<script src="/Toskana-Impessionismus-2027/ui/selection-rules.js?v=a5a81c058500" defer></script><script src="/Toskana-Impessionismus-2027/ui/atelier.js?v=beec2476017f" defer></script>
 <script src="/Toskana-Impessionismus-2027/ui/common.js" defer></script>
 </body></html>
