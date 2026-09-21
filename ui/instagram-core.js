@@ -13,13 +13,15 @@
 
   function validateSelection(raw,pool){
     if(!object(raw)||raw.version!==1||raw.type!=='instagram-selection'||raw.year!==2027||!Number.isSafeInteger(raw.revision)||raw.revision<0||!object(raw.items))throw Error('Die Instagram-Auswahl hat ein unbekanntes Format.');
-    const known=new Set(pool.map(item=>item.id));
+    const known=new Map(pool.map(item=>[item.id,item]));
     const clean={...emptySelection(),revision:raw.revision};
     for(const [id,value] of Object.entries(raw.items)){
       if(!known.has(id)||!object(value))throw Error('Die Auswahl enthält ein unbekanntes Bild: '+id);
       const month=value.month??null,note=value.note===undefined?'':value.note;
       if(typeof value.selected!=='boolean'||!validMonth(month)||typeof note!=='string'||Array.from(note).length>2000)throw Error('Ungültige Vormerkung für '+id+'. Monat: 1–12 oder offen. Notiz: höchstens 2000 Zeichen.');
+      if(value.allow_calendar_variant!==undefined&&(typeof value.allow_calendar_variant!=='boolean'||(value.allow_calendar_variant&&known.get(id).kind!=='painting')))throw Error('Nur gemalte Alternativen können für ein Kalenderfoto freigegeben werden.');
       clean.items[id]={selected:value.selected,month,note};
+      if(value.allow_calendar_variant!==undefined)clean.items[id].allow_calendar_variant=value.allow_calendar_variant;
     }
     return clean;
   }
@@ -47,6 +49,21 @@
     return asset;
   }
 
+  function collectionMonth(item,value,calendar,pool){
+    if(value.month)return value.month;
+    const assigned=pool.find(candidate=>candidate.kind==='painting'&&candidate.place_slug===item.place_slug&&calendar?.items?.[candidate.id]?.month);
+    return assigned?calendar.items[assigned.id].month:null;
+  }
+  function collectionFolder(item,month){
+    const place=(item.place||item.place_slug).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    if(!place)throw Error('Der Ortsname für den Ordner fehlt.');
+    return String(month||0).padStart(2,'0')+'_'+place;
+  }
+  function isCalendarBlocked(item,value,occupied){
+    const uses=occupied.get(item.source_id)||[];
+    return uses.length>0&&!(value?.allow_calendar_variant&&item.kind==='painting'&&!uses.some(entry=>entry.id===item.id));
+  }
+
   function exportPlan(raw,pool,calendar,policy,includeCalendar=false){
     const state=validateSelection(raw,pool), occupied=calendarSources(calendar,pool,policy);
     const rows=[],excluded=[],selection=state;
@@ -54,8 +71,9 @@
       const value=state.items[item.id];
       if(!value?.selected)continue;
       if(!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(item.id))throw Error('Ungültige Bild-ID für den Export.');
-      const row={id:item.id,source_id:item.source_id,place:item.place,place_slug:item.place_slug,kind:item.kind,title:item.title,artist:item.artist,palette:item.palette,story_url:item.story_url||'',asset:safeAsset(item.asset),filename:'Bilder/'+item.id+'.jpg',month:value.month,note:value.note,image_format:imageFormat,calendar:occupied.get(item.source_id)||[]};
-      if(row.calendar.length&&!includeCalendar)excluded.push(row);
+      const collection_month=collectionMonth(item,value,calendar,pool),folder=collectionFolder(item,collection_month);
+      const row={folder,collection_month,id:item.id,source_id:item.source_id,place:item.place,place_slug:item.place_slug,kind:item.kind,title:item.title,artist:item.artist,palette:item.palette,story_url:item.story_url||'',asset:safeAsset(item.asset),filename:folder+'/'+item.id+'.jpg',month:value.month,note:value.note,image_format:imageFormat,calendar:occupied.get(item.source_id)||[]};
+      if(isCalendarBlocked(item,value,occupied)&&!includeCalendar)excluded.push(row);
       else rows.push(row);
     }
     return {rows,excluded,selection};
@@ -67,8 +85,8 @@
       if(/^[\s]*[=+@-]/.test(text)||/^[\t\r\n]/.test(text))text="'"+text;
       return '"'+text.replace(/"/g,'""')+'"';
     };
-    const headers=['Bild-ID','Quelldatei-ID','Datei','Ort','Bildart','Bildformat','Titel','Maler','Farbstimmung','Planmonat','Datum','Uhrzeit','Notiz','Begleitseite','Kalenderbelegung'];
-    const cells=rows.map(row=>[row.id,row.source_id,row.filename,row.place,row.kind==='original'?'Originalfoto':'Gemälde',row.image_format,row.title,row.artist,row.palette,row.month,'','',row.note,row.story_url,row.calendar.map(entry=>entry.kind==='cover'?'Titelseite':'Monat '+entry.month).join(', ')]);
+    const headers=['Bild-ID','Quelldatei-ID','Datei','Ordner','Sammlungsmonat','Ort','Bildart','Bildformat','Titel','Maler','Farbstimmung','Planmonat','Datum','Uhrzeit','Notiz','Begleitseite','Kalenderbelegung'];
+    const cells=rows.map(row=>[row.id,row.source_id,row.filename,row.folder,row.collection_month,row.place,row.kind==='original'?'Originalfoto':'Gemälde',row.image_format,row.title,row.artist,row.palette,row.month,'','',row.note,row.story_url,row.calendar.map(entry=>entry.kind==='cover'?'Titelseite':'Monat '+entry.month).join(', ')]);
     return '\ufeff'+[headers,...cells].map(row=>row.map(escape).join(';')).join('\r\n')+'\r\n';
   }
 
@@ -113,5 +131,5 @@
     u32(central,0x06054b50);u16(central+8,records.length);u16(central+10,records.length);u32(central+12,centralSize);u32(central+16,fileSize);
     return zip;
   }
-  return {emptySelection,validateSelection,calendarSources,safeAsset,exportPlan,planningCsv,createZip};
+  return {emptySelection,validateSelection,calendarSources,safeAsset,collectionMonth,collectionFolder,isCalendarBlocked,exportPlan,planningCsv,createZip};
 });

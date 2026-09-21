@@ -52,7 +52,7 @@
     <p id="ig-save-status" class="ig-save-status" role="status">Die Planung bleibt in diesem Browser. Sichere sie bei Bedarf als JSON-Datei.</p>
   </section>
   <section class="ig-export" aria-labelledby="ig-export-title">
-    <div><h2 id="ig-export-title">Den Bildvorrat mitnehmen</h2><p>Das Bildpaket enthält die ausgewählten JPEGs, eine CSV-Planung und JSON-Dateien. Alle Bilder bleiben unbeschnitten; das Instagram-Format legst du später fest.</p><label class="ig-check"><input type="checkbox" id="ig-include-calendar"> Auch vorgemerkte Kalenderfotos ins Bildpaket aufnehmen</label><p id="ig-export-summary" class="ig-hint"></p></div>
+    <div><h2 id="ig-export-title">Den Bildvorrat mitnehmen</h2><p>Das Bildpaket enthält die ausgewählten JPEGs, eine CSV-Planung und JSON-Dateien. Die Bilder liegen in Ordnern nach Monat und Ort, zum Beispiel <code>02_Bolgheri</code>. Ohne Planmonat gilt der Kalendermonat des Ortes; <code>00</code> bedeutet noch offen. Alle Bilder bleiben unbeschnitten; das Instagram-Format legst du später fest.</p><label class="ig-check"><input type="checkbox" id="ig-include-calendar"> Auch vorgemerkte Kalenderfotos ins Bildpaket aufnehmen</label><p id="ig-export-summary" class="ig-hint"></p></div>
     <div class="ig-export-buttons"><button type="button" id="ig-zip" class="button" disabled>Bildpaket als ZIP laden</button><button type="button" id="ig-csv" class="ig-quiet" disabled>Nur Planung als CSV laden</button><p id="ig-export-status" class="ig-hint" role="status"></p></div>
   </section>
   <details class="ig-backup"><summary>Planung sichern oder importieren</summary><p>Die JSON-Sicherung enthält alle Vormerkungen und Notizen, auch Kalenderüberschneidungen und abgewählte Bilder. Ein Import ersetzt die aktuelle Instagram-Planung nach deiner Prüfung.</p><div class="ig-actions"><button type="button" id="ig-json-export" class="ig-quiet">Planung als JSON sichern</button><button type="button" id="ig-json-import" class="ig-quiet">JSON-Datei importieren</button><input type="file" id="ig-import-file" accept=".json,application/json" hidden></div><p id="ig-import-status" role="status" class="ig-hint"></p></details>
@@ -68,6 +68,6 @@
 <footer class="site-footer"><p>Eigene Reisefotos. Historische Vorbilder. Mit KI neu gemalt.</p><p>Impressionismus und seine Weiterentwicklungen · Toskana 2027</p></footer>
 <dialog id="lightbox" aria-label="Bildansicht"><button type="button" class="close-dialog" aria-label="Bildansicht schließen">Schließen ×</button><img alt=""><p></p></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="/Toskana-Impessionismus-2027/ui/instagram-core.js?v=d3f4341da766" defer></script><script src="/Toskana-Impessionismus-2027/ui/instagram.js?v=fd3ec45138fc" defer></script>
+<script src="/Toskana-Impessionismus-2027/ui/instagram-core.js?v=2c103c51934b" defer></script><script src="/Toskana-Impessionismus-2027/ui/instagram.js?v=791407e1b3ab" defer></script>
 <script src="/Toskana-Impessionismus-2027/ui/common.js" defer></script>
 </body></html>
