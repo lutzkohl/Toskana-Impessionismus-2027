@@ -11,9 +11,9 @@
   const asset=item=>prefix+'assets/'+core.safeAsset(item.asset);
   const json=value=>JSON.stringify(value,null,2)+'\n';
   let state=core.emptySelection(), ctx=null, lastStored=null, blocked='', queue=Promise.resolve(), exporting=false;
-  let serverRevision=0;
+  let serverRevision=0,viewerId=null;
   const value=id=>state.items[id]||{selected:false,month:null,note:''};
-  const status=text=>{$('aig-status').textContent=text;};
+  const status=text=>{$('aig-status').textContent=text;$('aig-view-status').textContent=text;};
   try {
     state=core.validateSelection(read('atelier-instagram-state'),pool);
     serverRevision=state.revision;
@@ -44,7 +44,7 @@
   }
   function render(){
     $('atelier-instagram').hidden=!contextItem();
-    if(!contextItem())return;
+    if(!contextItem()){if($('aig-dialog').open)$('aig-dialog').close();return;}
     if(ctx.calendarBlocked)blocked='Die Kalenderauswahl muss zuerst geprüft werden. Bitte neu laden.';
     let items=[],exportPlan,occupied=new Map();
     try {items=candidates();exportPlan=plan();occupied=core.calendarSources(ctx.calendar,pool,policy);}catch(error){blocked='Die Kalenderbelegung konnte nicht geprüft werden. Bitte neu laden.';}
@@ -64,6 +64,7 @@
     }).join('');
     $('aig-empty').hidden=items.length>0;
     $('aig-alert').hidden=!blocked;$('aig-alert').textContent=blocked;
+    renderViewer(items,occupied);
   }
   function assertBrowserFresh(){
     if(!local&&localStorage.getItem(key)!==lastStored)throw Error('Die Instagram-Auswahl wurde in einem anderen Fenster geändert. Bitte neu laden.');
@@ -86,23 +87,70 @@
       status('Instagram-Auswahl im Projekt gespeichert.');
     }).catch(error=>{blocked=error.message+' Bitte neu laden.';render();});
   }
-  $('aig-grid').addEventListener('change',event=>{
-    const id=event.target.dataset.igChoose;
+  function choose(id,selected){
     if(!id||blocked||exporting||!candidates().some(item=>item.id===id))return;
     try {
       assertBrowserFresh();
-      state.items[id]={...value(id),selected:event.target.checked,month:ctx.month,allow_calendar_variant:true};
+      state.items[id]={...value(id),selected,month:ctx.month,allow_calendar_variant:true};
       persist();
     }catch(error){blocked=error.message+' Die Änderung konnte nicht gespeichert werden.';}
     render();
+  }
+  $('aig-grid').addEventListener('change',event=>{
+    const id=event.target.dataset.igChoose;
+    choose(id,event.target.checked);
     $('aig-grid').querySelector('[data-ig-choose="'+id+'"]')?.focus({preventScroll:true});
   });
   $('aig-grid').addEventListener('click',event=>{
     const button=event.target.closest('[data-ig-enlarge]');if(!button)return;
-    const item=pool.find(entry=>entry.id===button.dataset.igEnlarge),dialog=$('lightbox');
-    if(!item||!dialog)return;
-    dialog.querySelector('img').src=asset(item);dialog.querySelector('img').alt=item.title+' — '+item.artist;
-    dialog.querySelector('p').textContent=item.title+' · '+item.artist+(item.palette?' · '+item.palette:'');dialog.showModal();
+    if(!candidates().some(item=>item.id===button.dataset.igEnlarge))return;
+    viewerId=button.dataset.igEnlarge;
+    renderViewer();$('aig-dialog').showModal();
+  });
+  function renderViewer(items=candidates(),occupied=core.calendarSources(ctx.calendar,pool,policy)){
+    if(!viewerId)return;
+    const index=items.findIndex(item=>item.id===viewerId),item=items[index];
+    if(!item){$('aig-dialog').close();viewerId=null;return;}
+    const saved=value(item.id),selected=belongs(item)&&!core.isCalendarBlocked(item,saved,occupied);
+    $('aig-view-image').src=asset(item);$('aig-view-image').alt=item.title+' — '+item.artist;
+    $('aig-view-title').textContent=item.artist;
+    $('aig-view-caption').textContent=(sources.get(item.source_id)?.caption||item.title)+(item.palette?' · '+item.palette:'');
+    $('aig-view-count').textContent='Bild '+(index+1)+' von '+items.length;
+    $('aig-view-folder').textContent=folder();
+    $('aig-view-prev').disabled=items.length<2;$('aig-view-next').disabled=items.length<2;
+    const toggle=$('aig-view-toggle');
+    toggle.setAttribute('aria-pressed',String(selected));toggle.disabled=!!blocked||exporting;
+    toggle.textContent=selected?'✓ Ausgewählt · Abwählen':saved.selected&&!belongs(item)?'Nach '+folder()+' verschieben':saved.selected&&core.isCalendarBlocked(item,saved,occupied)?'Andere Fassung freigeben':'Für Instagram wählen';
+    $('aig-view-status').textContent=blocked||$('aig-status').textContent;
+  }
+  function navigateViewer(step){
+    if(!$('aig-dialog').open)return;
+    const items=candidates(),index=items.findIndex(item=>item.id===viewerId);
+    if(index<0||!items.length)return;
+    viewerId=items[(index+step+items.length)%items.length].id;renderViewer(items);
+  }
+  function toggleViewer(){
+    if(!$('aig-dialog').open||blocked||exporting)return;
+    const item=candidates().find(item=>item.id===viewerId);if(!item)return;
+    const selected=belongs(item)&&!core.isCalendarBlocked(item,value(item.id),core.calendarSources(ctx.calendar,pool,policy));
+    choose(item.id,!selected);
+  }
+  $('aig-view-prev').addEventListener('click',()=>navigateViewer(-1));
+  $('aig-view-next').addEventListener('click',()=>navigateViewer(1));
+  $('aig-view-toggle').addEventListener('click',toggleViewer);
+  $('aig-view-close').addEventListener('click',()=>$('aig-dialog').close());
+  $('aig-dialog').addEventListener('click',event=>{if(event.target===$('aig-dialog'))$('aig-dialog').close();});
+  $('aig-dialog').addEventListener('close',()=>{
+    const last=viewerId;viewerId=null;
+    ($('aig-grid').querySelector('[data-ig-enlarge="'+last+'"]')||$('aig-summary')).focus({preventScroll:true});
+  });
+  $('aig-dialog').addEventListener('keydown',event=>{
+    if(!$('aig-dialog').open||event.ctrlKey||event.altKey||event.metaKey)return;
+    if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+      event.preventDefault();navigateViewer(event.key==='ArrowLeft'?-1:1);
+    }else if(event.key===' '||event.key==='Spacebar'){
+      event.preventDefault();if(!event.repeat)toggleViewer();
+    }
   });
   async function fresh(){
     await queue;
