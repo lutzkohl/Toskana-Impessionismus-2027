@@ -12,7 +12,7 @@ const byId = new Map(catalog.map(item => [item.id, item]));
 const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const weekdays = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 const layouts = [
-  {id:'leiste', name:'Die klare Leiste', short:'Bild oben, Tage unten. QR rechts.', description:'Eine schmale Tagesleiste mit dem QR-Code rechts. Der Titel steht zwischen Bild und Kalendarium. Das Bild wird leicht beschnitten.'},
+  {id:'leiste', name:'Die klare Leiste', short:'Das ganze Bild oben. Tage und QR unten.', description:'Das ganze Bild bleibt sichtbar, ohne Beschnitt oder Verzerrung. Je nach Bildformat bleibt seitlich oder oben und unten Weißraum. Titel, Tagesleiste und QR-Code stehen darunter.'},
   {id:'lichtband', name:'Das Lichtband', short:'Ein helles Band direkt im Bild.', description:'Titel und Tage liegen auf einem durchscheinenden weißen Band. Der QR-Code bleibt auf reinem Weiß. Das Bild wird für die große Fläche beschnitten.'},
   {id:'seitenrand', name:'Der Seitenrand', short:'Das ganze Bild. Der Monat daneben.', description:'Das Bild bleibt vollständig sichtbar. Rechts stehen der Monat als Wochenraster und darunter der QR-Code.'},
   {id:'schwebend', name:'Die schwebende Karte', short:'Ein Monatsraster über der Bildkante.', description:'Eine weiße Kalenderkarte überlappt den unteren Bildrand. Der QR-Code sitzt neben dem Wochenraster. Das Bild wird leicht beschnitten.'}
