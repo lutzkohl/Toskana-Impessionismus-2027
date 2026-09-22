@@ -86,13 +86,15 @@ function renderFlow() {
   $('city-select').value=city;
   $('city-hint').textContent=city?(placeUsage(city)?'Dieser Ort ist bereits für '+placeUsage(city)+' reserviert.':months[month-1]+' bleibt gewählt. Jetzt ein Ausgangsfoto aussuchen.'):'Jeder Ort einmal. Vergebene Orte sind gesperrt; im Jahresplan kannst du sie bearbeiten.';
   const citySources=sources.filter(s=>s.place_slug===city);
+  const videoStills=citySources.filter(s=>s.source_type==='video-frame').length;
+  const sourceCount=videoStills?`${citySources.length-videoStills} Fotos · ${videoStills} Videostandbilder`:`${citySources.length} Originalfotos`;
   const currentSource=citySources.find(s=>s.id===photo);
   $('source-select').disabled=!city;
   $('source-select').innerHTML=`<option value="">${city?'Foto wählen …':'Zuerst einen Ort wählen'}</option>`+citySources.map((s,index)=>`<option value="${escape(s.id)}">${index+1}. ${escape(s.caption)}</option>`).join('');
   $('source-select').value=photo;
-  $('source-hint').textContent=currentSource?'Ausgewählt: '+currentSource.caption:city?citySources.length+' Fotos · unten auch als Bildvorschau.':'Erst den Ort, dann das konkrete Foto wählen.';
+  $('source-hint').textContent=currentSource?'Ausgewählt: '+currentSource.caption:city?sourceCount+' · unten auch als Bildvorschau.':'Erst den Ort, dann das konkrete Foto wählen.';
   $('source-choice').hidden=!city;
-  $('source-description').textContent=citySources.length+' Originalfotos'+(currentSource?' · Ausgewählt: '+currentSource.caption:' · Klicke auf ein Foto. Danach den Maler in Schritt 4 wählen.');
+  $('source-description').textContent=sourceCount+(currentSource?' · Ausgewählt: '+currentSource.caption:' · Klicke auf ein Bild. Danach den Maler in Schritt 4 wählen.');
   $('instagram-link').href='#atelier-instagram';
   $('source-options').innerHTML=citySources.map(s=>{
     const variants=catalog.filter(i=>i.source_id===s.id);
@@ -308,7 +310,7 @@ $('atelier-export').addEventListener('click',()=>{
   const link=document.createElement('a');link.href=url;link.download='Toskana-2027-Auswahl.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 $('open-origins').addEventListener('click',()=>{
-  $('origins-content').innerHTML=`<figure><img src="${escape(asset(active.photo_asset))}" alt="${escape(active.source_caption)}"><figcaption><h3>Unser Foto aus ${escape(active.place)}</h3><p>${escape(active.source_caption)}</p></figcaption></figure><figure><img src="${escape(asset(active.reference_asset))}" alt="${escape(active.reference.title)}"><figcaption><h3>${escape(active.artist.name)}</h3><p>„${escape(active.reference.title)}“, ${escape(active.reference.year)}</p><a href="${escape(active.reference.source)}" target="_blank" rel="noopener">${escape(active.reference.source_label)}</a></figcaption></figure>`;
+  $('origins-content').innerHTML=`<figure><img src="${escape(asset(active.photo_asset))}" alt="${escape(active.source_caption)}"><figcaption><h3>Unser ${active.source_type==='video-frame'?'Videostandbild':'Foto'} aus ${escape(active.place)}</h3><p>${escape(active.source_caption)}</p></figcaption></figure><figure><img src="${escape(asset(active.reference_asset))}" alt="${escape(active.reference.title)}"><figcaption><h3>${escape(active.artist.name)}</h3><p>„${escape(active.reference.title)}“, ${escape(active.reference.year)}</p><a href="${escape(active.reference.source)}" target="_blank" rel="noopener">${escape(active.reference.source_label)}</a></figcaption></figure>`;
   $('origins-dialog').showModal();
 });
 $('enlarge-preview').addEventListener('click',()=>$('preview-dialog').showModal());
