@@ -10,7 +10,7 @@ const prefix = document.body.dataset.prefix;
 const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const key = 'toskana-2027-selection-v1';
 const byId = new Map(catalog.map(x=>[x.id,x]));
-let state = initial, queue = Promise.resolve(), blocked = false, toastTimer;
+let state = initial, queue = Promise.resolve(), blocked = false, toastTimer, lastCalendarRaw=null;
 const clone = x => JSON.parse(JSON.stringify(x));
 const defaults = () => ({favorite:false,stars:0,note:'',month:null,layout:'leiste'});
 const value = id => state.items[id] || defaults();
@@ -34,7 +34,7 @@ function valid(s,enforceUnique=false) {
   return result;
 }
 if(!local) {
-  try {const saved=localStorage.getItem(key);if(saved) state=valid(JSON.parse(saved));}
+  try {const saved=localStorage.getItem(key);lastCalendarRaw=saved;if(saved) state=valid(JSON.parse(saved));}
   catch(e){blocked=true;status.textContent='Die gespeicherte Auswahl konnte nicht geladen werden: '+e.message;}
 }
 function persist() {
@@ -42,8 +42,8 @@ function persist() {
   try {rules.assertUnique(state,catalog,policy.cover_image_id);}
   catch(error){status.textContent='Bitte doppelte Belegungen auflösen: '+error.message;tell(status.textContent);return;}
   if(!local) {
-    try {localStorage.setItem(key,JSON.stringify(state));status.textContent='In diesem Browser gespeichert.';}
-    catch(e){status.textContent='Speichern im Browser nicht möglich. Bitte die Auswahl exportieren.';tell(status.textContent);}
+    try {const saved=window.SelectionStorage.write(localStorage,key,lastCalendarRaw,state);state=saved.state;lastCalendarRaw=saved.raw;status.textContent='In diesem Browser gespeichert.';}
+    catch(e){blocked=true;status.textContent=e.message+' Änderungen bei Bedarf exportieren, dann neu laden.';tell(status.textContent);}
     return;
   }
   const snapshot=clone(state);

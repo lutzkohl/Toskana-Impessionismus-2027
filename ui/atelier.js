@@ -19,7 +19,7 @@ const layouts = [
 ];
 const layoutById = new Map(layouts.map(x => [x.id,x]));
 const defaults = () => ({favorite:false,stars:0,note:'',month:null,layout:'leiste'});
-let state = JSON.parse($('atelier-state').textContent), blocked = false, queue = Promise.resolve();
+let state = JSON.parse($('atelier-state').textContent), blocked = false, queue = Promise.resolve(), lastCalendarRaw=null;
 const value = id => ({...defaults(),...state.items[id]});
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asset = path => prefix + 'assets/' + path;
@@ -46,7 +46,7 @@ function validState(s) {
   return clean;
 }
 try {
-  const saved = local ? null : localStorage.getItem(storageKey);
+  const saved = local ? null : localStorage.getItem(storageKey);lastCalendarRaw=saved;
   state = validState(saved ? JSON.parse(saved) : state);
 } catch(error) {
   blocked=true;
@@ -139,8 +139,8 @@ function persist() {
   try {rules.assertUnique(state,catalog,policy.cover_image_id);}
   catch(error) {message('Bitte doppelte Belegungen im Jahresplan auflösen: '+error.message);return;}
   if(!local) {
-    try {localStorage.setItem(storageKey,JSON.stringify(state));message('In diesem Browser gespeichert.');}
-    catch(error) {message('Browser-Speicher nicht verfügbar. Bitte die Auswahl exportieren.');}
+    try {const saved=window.SelectionStorage.write(localStorage,storageKey,lastCalendarRaw,state);state=saved.state;lastCalendarRaw=saved.raw;message('In diesem Browser gespeichert.');}
+    catch(error) {blocked=true;message(error.message+' Änderungen bei Bedarf exportieren, dann neu laden.');}
     return;
   }
   const snapshot=JSON.parse(JSON.stringify(state));
