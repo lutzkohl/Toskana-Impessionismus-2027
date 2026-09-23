@@ -1,12 +1,12 @@
 /* Monthly selection rounds: pure rules shared by the UI and handoff exports. */
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./instagram-core.js'),require('./selection-rules.js'));
-  else root.RoundCore=factory(root.InstagramCore,root.CalendarSelectionRules);
-})(typeof globalThis!=='undefined'?globalThis:this,function(I,C){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./instagram-core.js'),require('./selection-rules.js'),require('./wallpaper-core.js'));
+  else root.RoundCore=factory(root.InstagramCore,root.CalendarSelectionRules,root.WallpaperCore);
+})(typeof globalThis!=='undefined'?globalThis:this,function(I,C,W){
   'use strict';
   const object=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
   const clone=x=>JSON.parse(JSON.stringify(x));
-  const emptyWorkflow=()=>({version:1,revision:0,skipped:[],completed:{},drafts:{}});
+  const emptyWorkflow=()=>({version:1,revision:0,skipped:[],completed:{},drafts:{},wallpapers:[]});
   const defaultCalendar=()=>({month:null,layout:'leiste',favorite:false,stars:0,note:''});
   function validateBundle(raw,catalog,pool,sources,policy={}){
     if(!object(raw)||raw.version!==1||raw.type!=='toskana-workflow'||raw.year!==2027)throw Error('Bitte eine Gesamtsicherung der Monatsrunde 2027 wählen.');
@@ -25,7 +25,7 @@
     const w=raw.workflow,sourceIds=new Set(sources.map(s=>s.id)),cities=new Set(sources.map(s=>s.place_slug));
     if(!object(w)||w.version!==1||!Number.isSafeInteger(w.revision)||w.revision<0||!Array.isArray(w.skipped)||!object(w.completed)||!object(w.drafts))throw Error('Ungültiger Bearbeitungsstand.');
     if(w.skipped.some(id=>!sourceIds.has(id)))throw Error('Ein übersprungenes Motiv ist unbekannt.');
-    const workflow={...emptyWorkflow(),revision:w.revision,skipped:[...new Set(w.skipped)].sort()};
+    const workflow={...emptyWorkflow(),revision:w.revision,wallpapers:W.ids(w.wallpapers===undefined?[]:w.wallpapers,pool),skipped:[...new Set(w.skipped)].sort()};
     for(const [m,v] of Object.entries(w.completed)){
       if(!/^(?:[1-9]|1[0-2])$/.test(m)||!object(v)||typeof v.signature!=='string'||v.signature.length>100000||typeof v.at!=='string'||!Number.isFinite(Date.parse(v.at)))throw Error('Ungültiger Monatsabschluss.');
       workflow.completed[m]={signature:v.signature,at:v.at};

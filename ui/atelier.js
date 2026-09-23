@@ -248,7 +248,7 @@ function renderInstagram() {
   window.AtelierInstagram?.update({city,month,calendar:state,draftId:ready()?active.id:null,calendarBlocked:blocked,
     getCalendar:async()=>{await queue;if(blocked)throw Error('Bitte zuerst die Kalenderauswahl prüfen und neu laden.');return state;}});
 }
-function render() {renderFlow();renderPreview();renderMatrix();renderYear();renderAvailability();renderInstagram();}
+function render() {$('atelier-wallpaper').dataset.wallpaperId=active?.id||'';window.WallpaperSelection?.sync();renderFlow();renderPreview();renderMatrix();renderYear();renderAvailability();renderInstagram();}
 function selectImage(id) {if(!byId.has(id))return;active=byId.get(id);city=active.place_slug;photo=active.source_id;artist=active.artist.slug;if(!blocked)message('');render();}
 function openPhoto(source) {
   const box=$('lightbox');box.querySelector('img').src=asset(source.asset);box.querySelector('img').alt=source.caption;box.querySelector('p').textContent=source.caption;box.showModal();

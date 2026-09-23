@@ -1,0 +1,20 @@
+(() => {
+ const $=id=>document.getElementById(id),store=window.WallpaperSelection,I=window.InstagramCore,pool=JSON.parse($('wallpaper-pool').textContent),prefix=document.body.dataset.prefix,local=document.body.dataset.mode==='local';
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let exporting=false;
+ function selected(){const ids=new Set(store.ids());return pool.filter(i=>ids.has(i.id));}
+ function render(){const items=selected();$('screen-empty').hidden=!!items.length;$('screen-grid').innerHTML=items.map(i=>`<article><button type="button" class="screen-image" data-view="${esc(i.id)}"><img src="${prefix}assets/${I.safeAsset(i.asset)}" alt="${esc(i.title)}" loading="lazy"></button><h3>${esc(i.place)}</h3><p>${esc(i.artist||'Originalfoto')} · ${esc(i.palette||'')}</p><p class="small">Arbeitskopie: ${i.width} × ${i.height} px</p><label class="wallpaper-choice"><input type="checkbox" data-wallpaper-id="${esc(i.id)}"> In der Hintergrund-Sammlung</label></article>`).join('');buttons();}
+ function buttons(){for(const id of ['screen-zip','screen-folder'])if($(id))$(id).disabled=exporting||!store.ids().length||!store.valid();}
+ $('screen-grid').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;const i=pool.find(x=>x.id===b.dataset.view),d=$('lightbox');d.querySelector('img').src=prefix+'assets/'+I.safeAsset(i.asset);d.querySelector('img').alt=i.title;d.querySelector('p').textContent=i.place+' · '+(i.artist||'Originalfoto');d.showModal();});
+ async function exportImages(folder){
+  if(exporting||!store.valid())return;const ids=store.ids(),snapshot=JSON.stringify(ids),revision=store.revision(),items=selected();exporting=true;buttons();const status=$('screen-export-status');
+  try{
+   if(folder){status.textContent='Originaldateien werden gesammelt …';const response=await fetch('/api/hintergruende/sammlung',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,ids})});const result=await response.json();if(!response.ok)throw Error(result.error||'Export fehlgeschlagen.');status.textContent=result.count+' Bilder gesammelt: '+result.path;}
+   else{const entries=[],manifest=[];for(const [index,item] of items.entries()){status.textContent='Lade Bild '+(index+1)+' / '+items.length+' …';const response=await fetch(prefix+'assets/'+I.safeAsset(item.asset));if(!response.ok)throw Error('Bild konnte nicht geladen werden: '+item.title);const file='Bilder/'+item.id+'.jpg';entries.push({name:file,data:new Uint8Array(await response.arrayBuffer())});manifest.push({id:item.id,file,place:item.place,artist:item.artist,width:item.width,height:item.height});}
+    await store.assertFresh();
+    if(!store.valid()||store.revision()!==revision||JSON.stringify(store.ids())!==snapshot)throw Error('Die Auswahl wurde während des Exports geändert. Bitte erneut starten.');
+    entries.push({name:'Auswahl.json',data:JSON.stringify(ids,null,2)},{name:'Manifest.json',data:JSON.stringify({version:1,type:'wallpaper-export',year:2027,uncropped:true,exported:manifest},null,2)},{name:'Liesmich.txt',data:'Unbeschnittene Arbeitskopien. Alle Bilder liegen in Bilder/. Nach dem manuellen 16:9-Zuschnitt entsteht das öffentliche Hintergrundpaket.\n'});
+    const blob=new Blob([I.createZip(entries)],{type:'application/zip'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Toskana-Hintergruende-Arbeitskopien.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status.textContent=items.length+' unbeschnittene Arbeitskopien als ZIP bereitgestellt.';}
+  }catch(e){status.textContent=e.message;}finally{exporting=false;buttons();}
+ }
+ $('screen-zip').addEventListener('click',()=>exportImages(false));if(local)$('screen-folder').addEventListener('click',()=>exportImages(true));document.addEventListener('wallpaper-change',()=>{render();requestAnimationFrame(buttons);});window.addEventListener('storage',buttons);render();
+})();

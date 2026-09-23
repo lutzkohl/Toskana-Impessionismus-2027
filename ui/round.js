@@ -69,6 +69,7 @@
   function renderArt(){
     const item=active(),empty=!item,chosen=item?selectedFor(item.source_id):null,value=item?state.instagram.items[item.id]||{}:{};
     $('round-enlarge').disabled=empty;
+    for(const id of ['round-wallpaper','round-dialog-wallpaper']){$(id).checked=!!item&&state.workflow.wallpapers.includes(item.id);$(id).disabled=empty||disabled();}
     if(item){$('round-art').src=asset(item);$('round-art').alt=item.title+' – '+item.artist;}else{$('round-art').removeAttribute('src');$('round-art').alt='Wähle einen Ort, um die Bilder zu vergleichen.';}
     $('round-use').textContent=item?usage(item):'Deine Monatsrunde';
     $('round-artist').textContent=item?(item.artist||'Originalfoto'):'Ort auswählen';
@@ -157,6 +158,7 @@
   async function chooseCalendar(){const item=active();if(!item||calendarError(item))return;if(await commit(b=>R.chooseCalendar(b,item.id,month,...args)))say('Kalenderbild gewählt und gesichert. Weiter mit „2 · Instagram-Motive“.');}
   async function toggleInstagram(){const item=active();if(!item||I.calendarSources(state.calendar,pool,policy).has(item.source_id))return;await commit(b=>{const selected=!b.instagram.items[item.id]?.selected;b.instagram=I.chooseItem(b.instagram,pool,item.id,{selected,...(selected?{month:null,final_frame:'full'}:{})},b.calendar,policy);b.workflow.skipped=b.workflow.skipped.filter(id=>id!==item.source_id);return b;});}
   function renderDialog(){const item=active();if(!item)return;$('round-dialog-title').textContent=item.place+' · '+item.artist+' · '+usage(item);$('round-dialog-art').src=asset(item);$('round-dialog-art').alt=item.title;$('round-dialog-choice').textContent=step==='calendar'&&scope==='month'?$('round-calendar').textContent:$('round-instagram').textContent;$('round-dialog-choice').disabled=step==='calendar'&&scope==='month'?$('round-calendar').disabled:$('round-instagram').disabled;}
+  for(const id of ['round-wallpaper','round-dialog-wallpaper'])$(id).addEventListener('change',e=>{const item=active(),selected=e.target.checked;if(item)commit(b=>{b.workflow=window.WallpaperCore.choose(b.workflow,item.id,selected,pool);return b;});});
   $('round-city').addEventListener('change',async e=>{city=e.target.value;activeId='';if(scope==='month'&&city)await commit(b=>{b.workflow.drafts[month]=city;return b;});else render();});
   $('round-months').addEventListener('click',e=>{const b=e.target.closest('[data-month]');if(b)switchMonth(Number(b.dataset.month));});
   $('round-reserve').addEventListener('click',reserve);
@@ -189,7 +191,7 @@
   $('round-plan-export').addEventListener('click',()=>download('Toskana-2027-Planungsgrundlage.json',{version:1,type:'toskana-planning-draft',year:2027,created_at:new Date().toISOString(),selection:state,plan:R.planning(state,...args),sources:sources.map(s=>({id:s.id,place:s.place,filename:s.filename,source_type:s.source_type||'photo'}))}));
   $('round-import').addEventListener('change',async e=>{
     const file=e.target.files[0];e.target.value='';if(!file||busy)return;
-    try{if(file.size>2_000_000)throw Error('Die Sicherung ist zu groß.');imported=R.validateBundle(JSON.parse(await file.text()),...args);const plan=R.planning(imported,...args),count=plan.months.filter(m=>m.calendarId).length,done=plan.months.filter(m=>m.status==='done').length;$('round-import-summary').textContent=file.name+': '+count+' Kalenderbilder, '+plan.total+' Instagram-Beiträge, '+done+' abgeschlossene Monate. Aktuell: '+Object.values(state.calendar.items).filter(v=>v.month).length+' Kalenderbilder und '+Object.values(state.instagram.items).filter(v=>v.selected).length+' Instagram-Beiträge.';$('round-import-dialog').showModal();}
+    try{if(file.size>2_000_000)throw Error('Die Sicherung ist zu groß.');imported=R.validateBundle(window.WallpaperCore.preserveLegacy(JSON.parse(await file.text()),state.workflow),...args);const plan=R.planning(imported,...args),count=plan.months.filter(m=>m.calendarId).length,done=plan.months.filter(m=>m.status==='done').length;$('round-import-summary').textContent=file.name+': '+count+' Kalenderbilder, '+plan.total+' Instagram-Beiträge, '+done+' abgeschlossene Monate, '+imported.workflow.wallpapers.length+' Hintergrundbilder. Aktuell: '+Object.values(state.calendar.items).filter(v=>v.month).length+' Kalenderbilder und '+Object.values(state.instagram.items).filter(v=>v.selected).length+' Instagram-Beiträge.';$('round-import-dialog').showModal();}
     catch(error){imported=null;alert(error.message);}
   });
   $('round-import-cancel').addEventListener('click',()=>{imported=null;$('round-import-dialog').close();});
