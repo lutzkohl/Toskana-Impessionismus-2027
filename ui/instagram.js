@@ -15,7 +15,7 @@
   let state=core.emptySelection(), calendar=read('instagram-calendar'), occupied=new Map();
   let blocked='',invalidRaw=null,lastStored=null,storageUnavailable=false,calendarError='';
   let city='',filter='unused',activeSource='',queue=Promise.resolve(),pending=0,serverRevision=0;
-  let saveTimer=null,exporting=false,refreshing=null,imported=null,invalidNotes=new Set();
+  let saveTimer=null,exporting=false,refreshing=null,imported=null,invalidNotes=new Set(),unsavedConflicts=false;
 
   function message(text){$('ig-save-status').textContent=text;}
   function showStorageAlert(text,reason=''){
@@ -43,6 +43,7 @@
     } catch(error){storageUnavailable=true;showStorageAlert('Browser-Speicher nicht verfügbar. Sichere deine Planung als JSON, bevor du die Seite verlässt.');calendar=null;}
   }
   checkCalendar(calendar);
+  let persistedState=core.validateSelection(state,pool);
   const cities=[...new Map(sources.map(source=>[source.place_slug,source.place])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'de'));
   $('ig-city').innerHTML='<option value="">Alle Orte</option>'+cities.map(([slug,name])=>`<option value="${escape(slug)}">${escape(name)}</option>`).join('');
   const params=new URLSearchParams(location.search);
@@ -61,7 +62,7 @@
     const visible=sources.filter(sourceVisible);
     if(!visible.some(source=>source.id===activeSource))activeSource=visible[0]?.id||'';
     document.querySelectorAll('[data-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.filter===filter)));
-    $('ig-filter-hint').textContent=calendarError?'Kalenderbelegung unbekannt: Bis zur Klärung werden alle Fotos angezeigt.':filter==='unused'?'Restmotive zeigen Fotos, die noch nicht im Kalender oder auf der Titelseite verwendet werden.':filter==='selected'?'Fotos mit mindestens einem vorgemerkten Bild. Kalenderüberschneidungen bleiben erhalten und werden markiert.':'Alle Ausgangsfotos. Kalenderbilder sind gekennzeichnet und können zusätzlich vorgemerkt werden.';
+    $('ig-filter-hint').textContent=calendarError?'Kalenderbelegung unbekannt. Neue Vormerkungen sind bis zur Klärung gesperrt.':filter==='unused'?'Restmotive zeigen Fotos, die noch nicht im Kalender oder auf der Titelseite verwendet werden.':filter==='selected'?'Deine vorgemerkten Motive. Pro Motiv gehört eine Fassung in die Auswahl.':'Alle Ausgangsfotos. Motive aus dem Kalender sind für Instagram gesperrt.';
     $('ig-photos').innerHTML=visible.map(source=>{
       const variants=pool.filter(item=>item.source_id===source.id),count=variants.filter(item=>value(item.id).selected).length;
       const image=variants.find(item=>item.kind==='original');
@@ -78,13 +79,14 @@
     $('ig-photo-title').textContent=source.place;
     $('ig-photo-caption').textContent=source.caption;
     $('ig-photo-usage').hidden=!usage;
-    $('ig-photo-usage').textContent='Dieses Quellenfoto ist im Kalender: '+usage+'. Vormerkungen bleiben bestehen. Andere im Atelier gewählte Gemälde dieses Fotos können exportiert werden.';
+    $('ig-photo-usage').textContent='Dieses Motiv ist im Kalender: '+usage+'. Für Instagram erst im Kalender abwählen. Das gilt für alle Maler und Farbvarianten dieser Aufnahme.';
     $('ig-atelier-link').href=prefix+'atelier/?ort='+encodeURIComponent(source.place_slug)+'&foto='+encodeURIComponent(source.id);
     const variants=pool.filter(item=>item.source_id===activeSource&&(item.kind==='painting'||$('ig-originals').checked));
     $('ig-variants').innerHTML=variants.map(item=>{
       const selected=value(item.id).selected;
       const story=item.story_url?prefix+'bilder/'+encodeURIComponent(item.id)+'/':'';
-      return `<article class="ig-variant ${selected?'is-selected':''}"><button type="button" class="ig-image-button" data-enlarge="${escape(item.id)}" aria-label="${escape(label(item)+' vollständig ansehen')}"><img src="${escape(asset(item.asset))}" alt="${escape(item.title+' — '+label(item))}" loading="lazy"></button><label class="ig-variant-label"><input type="checkbox" data-select="${escape(item.id)}" ${selected?'checked':''} ${blocked?'disabled':''}><span><strong>${escape(label(item))}</strong><span>${escape(item.palette||(item.kind==='original'?'Unser Reisefoto':item.title))}</span></span></label><p class="ig-variant-meta">${selected?'Für Instagram vorgemerkt':'Für Instagram vormerken'}${item.kind==='original'?'<br>'+escape(source.filename||'Ausgangsfoto'):'<br>Mit KI nach historischem Vorbild gemalt'}${story?'<br><a href="'+escape(story)+'">Zum Bild &amp; Vorbild</a>':''}</p>${usage?'<p class="ig-conflict">'+(core.isCalendarBlocked(item,value(item.id),occupied)?'Kalenderfoto · im Standardexport ausgelassen':'Andere Fassung des Kalenderfotos · zum Export freigegeben')+'</p>':''}</article>`;
+      const sibling=pool.find(other=>other.source_id===item.source_id&&other.id!==item.id&&value(other.id).selected);
+      return `<article class="ig-variant ${selected?'is-selected':''}"><button type="button" class="ig-image-button" data-enlarge="${escape(item.id)}" aria-label="${escape(label(item)+' vollständig ansehen')}"><img src="${escape(asset(item.asset))}" alt="${escape(item.title+' — '+label(item))}" loading="lazy"></button><label class="ig-variant-label"><input type="checkbox" data-select="${escape(item.id)}" ${selected?'checked':''} ${blocked||(!selected&&(usage||calendarError))?'disabled':''}><span><strong>${escape(label(item))}</strong><span>${escape(item.palette||(item.kind==='original'?'Unser Reisefoto':item.title))}</span></span></label><p class="ig-variant-meta">${selected?'✓ Für Instagram gewählt':sibling?'Ersetzt '+escape(label(sibling)):'Für Instagram wählen'}${item.kind==='original'?'<br>'+escape(source.filename||'Ausgangsfoto'):'<br>Mit KI nach historischem Vorbild gemalt'}${story?'<br><a href="'+escape(story)+'">Zum Bild &amp; Vorbild</a>':''}</p>${usage?'<p class="ig-conflict">Kalendermotiv · vom Export ausgeschlossen</p>':''}</article>`;
     }).join('');
     const url=new URL(location.href);url.searchParams.set('ort',source.place_slug);url.searchParams.set('foto',source.id);history.replaceState(null,'',url);
   }
@@ -92,19 +94,36 @@
     if(invalidNotes.size)return;
     const selected=pool.filter(item=>value(item.id).selected);
     $('ig-selection-count').textContent=selected.length+' '+(selected.length===1?'Bild':'Bilder');
-    $('ig-plan-count').textContent=selected.length+' vorgemerkt';$('ig-plan-empty').hidden=selected.length>0;
-    $('ig-plan-list').innerHTML=selected.map(item=>{
-      const itemValue=value(item.id),usage=conflictLabel(item.source_id);
-      return `<article class="ig-plan-row" data-plan="${escape(item.id)}"><img src="${escape(asset(item.asset))}" alt="${escape(item.title)}" loading="lazy"><div class="ig-plan-info"><h3>${escape(item.place)}</h3><p>${escape(label(item))}</p>${item.palette?'<p>'+escape(item.palette)+'</p>':''}<p>Ordner: ${escape(core.collectionFolder(item,core.collectionMonth(item,itemValue,calendar,pool)))}</p>${usage?'<p class="ig-conflict">Kalender: '+escape(usage)+'<br>'+(core.isCalendarBlocked(item,itemValue,occupied)?'Im Standardexport ausgelassen':'Andere Fassung · zum Export freigegeben')+'</p>':''}<button type="button" class="ig-remove" data-remove="${escape(item.id)}" ${blocked?'disabled':''}>Vormerkung entfernen</button></div><label class="ig-field ig-note-field" for="note-${escape(item.id)}">Idee oder Notiz<textarea id="note-${escape(item.id)}" data-note="${escape(item.id)}" rows="3" ${blocked?'disabled':''}>${escape(itemValue.note)}</textarea></label><label class="ig-field ig-month-field" for="month-${escape(item.id)}">Planmonat (optional)<select id="month-${escape(item.id)}" data-month="${escape(item.id)}" ${blocked?'disabled':''}><option value="">Noch offen</option>${months.map((month,index)=>'<option value="'+(index+1)+'" '+(itemValue.month===index+1?'selected':'')+'>'+month+'</option>').join('')}</select></label></article>`;
-    }).join('');
+    const issues=core.selectionIssues(state,pool,occupied);
+    $('ig-plan-count').textContent=(selected.length-issues.size)+' bereit · '+new Set(selected.map(i=>i.place_slug)).size+' Orte'+(issues.size?' · '+issues.size+' Konflikte':'');
+    $('ig-plan-empty').hidden=selected.length>0;
+    $('ig-plan-city').innerHTML='<option value="">Alle Orte</option>'+cities.map(([slug,name])=>`<option value="${escape(slug)}" ${$('ig-plan-city').value===slug?'selected':''}>${escape(name)}</option>`).join('');
+    const visible=selected.filter(item=>(!$('ig-plan-city').value||item.place_slug===$('ig-plan-city').value)&&(!$('ig-plan-month').value||String(core.collectionMonth(item,value(item.id),calendar,pool)||0)===$('ig-plan-month').value));
+    visible.sort((a,b)=>(core.collectionMonth(a,value(a.id),calendar,pool)||13)-(core.collectionMonth(b,value(b.id),calendar,pool)||13)||a.place.localeCompare(b.place,'de')||a.source_id.localeCompare(b.source_id));
+    let previous='';
+    $('ig-plan-list').innerHTML=visible.map(item=>{
+      const v=value(item.id),usage=conflictLabel(item.source_id),folder=core.collectionFolder(item,core.collectionMonth(item,v,calendar,pool));
+      const heading=previous===folder?'':`<h3 class="ig-group-title"><span>${folder.slice(0,2)}</span> ${escape(item.place)} <small>${core.collectionMonth(item,v,calendar,pool)?months[core.collectionMonth(item,v,calendar,pool)-1]:'Monat noch offen'} · 2027</small></h3>`;previous=folder;
+      const format=v.format||'original',swipe=format.startsWith('swipe');
+      const conflict=issues.get(item.id);
+      return heading+`<article class="ig-plan-row ${conflict?'has-conflict':''}" data-plan="${escape(item.id)}"><button class="ig-plan-art" type="button" data-preview="${escape(item.id)}" data-slide="-1" aria-label="${escape(item.title+' vergrößern')}"><img src="${escape(asset(item.asset))}" alt="${escape(item.title)}" loading="lazy"></button><div class="ig-plan-info"><p class="ig-eyebrow">${item.kind==='painting'?'Gewählte Malerfassung':'Gewähltes Original'}</p><h3>${escape(label(item))}</h3><p>${escape(bySource.get(item.source_id)?.caption||item.title)}</p>${item.palette?'<p>'+escape(item.palette)+'</p>':''}<p class="ig-folder">${escape(folder)}</p>${conflict?'<p class="ig-conflict">'+(usage?'Im Kalender: '+escape(usage)+'. Hier abwählen oder im Kalender freigeben.':'Mehrere Fassungen dieses Motivs gewählt. Bitte genau eine behalten.')+' Bis dahin kein Export.</p>':''}${conflict==='duplicate-source'?'<button type="button" class="ig-quiet" data-keep="'+escape(item.id)+'">Diese Fassung behalten</button>':''}<a class="ig-text-link" href="#ig-browse" data-change="${escape(item.source_id)}">Maler wechseln</a><button type="button" class="ig-remove" data-remove="${escape(item.id)}" ${blocked?'disabled':''}>Abwählen</button></div><div class="ig-plan-settings"><label class="ig-field">Beitragsformat<select data-format="${escape(item.id)}" ${blocked?'disabled':''}>${Object.entries(core.formats).map(([id,name])=>`<option value="${id}" ${format===id?'selected':''} ${id.startsWith('swipe')&&!(item.width>item.height)?'disabled':''}>${escape(name)}${id==='swipe-'+core.recommendedSegments(item.width,item.height)?' · empfohlen':''}</option>`).join('')}</select></label>${swipe?`<label class="ig-field">Abschlussbild<select data-ending="${escape(item.id)}" ${blocked?'disabled':''}><option value="crop" ${v.final_frame==='crop'?'selected':''}>Zugeschnittener Ausschnitt · 4:5</option><option value="full" ${v.final_frame!=='crop'?'selected':''}>Ganzes Gemälde mit Rand · 4:5</option></select></label>`:''}<label class="ig-field ig-month-field">Planmonat<select data-month="${escape(item.id)}" ${blocked?'disabled':''}><option value="">Kalendermonat des Ortes / offen</option>${months.map((month,index)=>'<option value="'+(index+1)+'" '+(v.month===index+1?'selected':'')+'>'+month+'</option>').join('')}</select></label><label class="ig-field ig-note-field">Idee oder Notiz<textarea data-note="${escape(item.id)}" rows="2" ${blocked?'disabled':''}>${escape(v.note)}</textarea></label></div><div class="ig-slide-preview"><p>${swipe?'Ein Beitrag · '+(Number(format.slice(-1))+1)+' Seiten · von links nach rechts wischen':'Ein Einzelbild'}${format!=='original'?' · 1080 × 1350 px':''}</p><div class="ig-filmstrip">${previewSlides(item,v)}</div>${swipe?'<p class="ig-hint">Die ersten '+format.slice(-1)+' Seiten ergeben ein zusammenhängendes Panorama. Dafür wird das Bild auf 4:5-Seiten zugeschnitten. Die letzte Seite steht für sich.</p>':''}</div></article>`;
+    }).join('')|| (selected.length?'<p class="ig-empty">Keine Auswahl für diesen Filter.</p>':'');
   }
-  function currentExport(){return core.exportPlan(state,pool,calendar,policy,$('ig-include-calendar').checked);}
+  function previewSlides(item,v){
+    if(!item.width||!item.height)return '';
+    return core.slides(item.width,item.height,v.format||'original',v.final_frame||'full').map((slide,index)=>`<button type="button" class="ig-slide-button" data-preview="${escape(item.id)}" data-slide="${index}" aria-label="Seite ${index+1} vergrößern">${slideImage(item,slide)}<span>${index+1} · ${slide.kind==='panorama'?'Panorama':slide.kind==='crop'?'Ausschnitt':slide.kind==='full'?'Gesamtbild':'Original'}</span></button>`).join('');
+  }
+  function slideImage(item,slide){
+    const d=slide.draw;
+    return `<span class="ig-slide" style="aspect-ratio:${slide.width}/${slide.height}"><img src="${escape(asset(item.asset))}" alt="" loading="lazy" style="left:${d.x/slide.width*100}%;top:${d.y/slide.height*100}%;width:${d.width/slide.width*100}%;height:${d.height/slide.height*100}%"></span>`;
+  }
+  function currentExport(){return core.exportPlan(state,pool,calendar,policy);}
   function renderExport(){
     let plan=null;
     if(!calendarError)try {plan=currentExport();}catch(error){$('ig-export-status').textContent=error.message;}
     $('ig-zip').disabled=exporting||!plan?.rows.length||invalidNotes.size>0;
     $('ig-csv').disabled=exporting||!plan?.rows.length||invalidNotes.size>0;
-    $('ig-export-summary').textContent=plan?plan.rows.length+' Bilder im Paket'+(plan.excluded.length?' · '+plan.excluded.length+' Kalenderbilder werden ausgelassen.':'.'):'Export wartet auf eine gültige Kalenderauswahl.';
+    $('ig-export-summary').textContent=plan?plan.rows.length+' Motive · '+plan.rows.reduce((n,row)=>n+row.files.length,0)+' Bilddateien im Paket'+(plan.excluded.length?' · '+plan.excluded.length+' Konflikte werden ausgelassen.':'.'):'Export wartet auf eine gültige Kalenderauswahl.';
   }
   function render(){renderPhotos();renderVariants();renderPlan();renderExport();}
 
@@ -113,11 +132,14 @@
     if(blocked||invalidNotes.size)return;
     let snapshot;
     try {snapshot=core.validateSelection(state,pool);}catch(error){message(error.message);return;}
+    const beforeIssues=core.selectionIssues(persistedState,pool,occupied);
+    unsavedConflicts=[...core.selectionIssues(state,pool,occupied)].some(([id,reason])=>beforeIssues.get(id)!==reason);
+    if(unsavedConflicts){message('Bitte die markierten Konflikte auflösen. Bis dahin bleibt dieser Entwurf ungespeichert; du kannst ihn als JSON sichern.');return;}
     if(!local){
       if(storageUnavailable){message('Nur für diese Sitzung vorgemerkt. Bitte die Planung als JSON sichern.');return;}
       try {
         if(localStorage.getItem(storageKey)!==lastStored){showStorageAlert('Die Planung wurde in einem anderen Fenster geändert. Sichere bei Bedarf deinen Entwurf als JSON und lade die Seite neu.','conflict');render();return;}
-        state.revision++;lastStored=JSON.stringify(state);localStorage.setItem(storageKey,lastStored);message('In diesem Browser gespeichert.');
+        state.revision++;lastStored=JSON.stringify(state);localStorage.setItem(storageKey,lastStored);persistedState=core.validateSelection(state,pool);message('In diesem Browser gespeichert.');
       } catch(error){storageUnavailable=true;showStorageAlert('Browser-Speicher nicht verfügbar. Bitte die Planung als JSON sichern.');message('Die letzte Änderung ist nur für diese Sitzung vorgemerkt.');}
       return;
     }
@@ -128,14 +150,18 @@
       const response=await fetch(prefix+'api/instagram/auswahl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot)});
       const data=await response.json();
       if(!response.ok)throw Error(data.error||'Speichern fehlgeschlagen.');
-      const saved=core.validateSelection(data,pool);serverRevision=saved.revision;state.revision=saved.revision;
+      const saved=core.validateSelection(data,pool);serverRevision=saved.revision;state.revision=saved.revision;persistedState=saved;
       message('Im Projekt gespeichert.');
     }).catch(error=>{showStorageAlert(error.message+' Sichere deinen Entwurf als JSON und lade die Seite neu.','conflict');render();message('Die letzte Änderung konnte nicht gespeichert werden.');}).finally(()=>{pending--;});
   }
   function changeItem(id,patch){
     if(blocked)return;
     if(invalidNotes.size){message('Bitte zuerst die zu langen Notizen kürzen.');renderVariants();return;}
-    state.items[id]={...value(id),...patch};render();persist();
+    try {
+      if(!local){const saved=localStorage.getItem(calendarKey);checkCalendar(saved?JSON.parse(saved):calendar);}
+      if(patch.selected&&calendarError)throw Error('Bitte zuerst die Kalenderbelegung prüfen.');
+      state=core.chooseItem(state,pool,id,patch,calendar,policy);render();persist();
+    }catch(error){message(error.message);renderVariants();}
   }
   function download(content,name,type){
     const url=URL.createObjectURL(new Blob([content],{type})),link=document.createElement('a');
@@ -162,11 +188,22 @@
     dialog.querySelector('img').src=asset(item.asset);dialog.querySelector('img').alt=item.title+' — '+label(item);dialog.querySelector('p').textContent=item.place+' · '+label(item)+' · Vollständiges Bild, unbeschnitten';dialog.showModal();
   });
   $('ig-plan-list').addEventListener('click',event=>{
+    const keep=event.target.closest('[data-keep]');if(keep){changeItem(keep.dataset.keep,{selected:true});return;}
+    const change=event.target.closest('[data-change]');if(change){activeSource=change.dataset.change;city=bySource.get(activeSource).place_slug;filter='all';$('ig-city').value=city;renderPhotos();renderVariants();return;}
+    const preview=event.target.closest('[data-preview]');if(preview){
+      const item=byId.get(preview.dataset.preview),index=Number(preview.dataset.slide),v=value(item.id);
+      const slide=core.slides(item.width,item.height,index<0?'original':v.format||'original',v.final_frame||'full')[Math.max(0,index)];
+      $('ig-preview-image').innerHTML=slideImage(item,slide);$('ig-preview-caption').textContent=item.place+' · '+label(item)+(index<0?' · Original': ' · Seite '+(index+1));$('ig-preview-dialog').showModal();return;
+    }
     const button=event.target.closest('[data-remove]');if(button){invalidNotes.delete(button.dataset.remove);changeItem(button.dataset.remove,{selected:false});}
   });
   $('ig-plan-list').addEventListener('change',event=>{
     if(event.target.matches('[data-month]'))changeItem(event.target.dataset.month,{month:event.target.value?Number(event.target.value):null});
+    if(event.target.matches('[data-format]')){const id=event.target.dataset.format;changeItem(id,{format:event.target.value});$('ig-plan-list').querySelector('[data-format="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});}
+    if(event.target.matches('[data-ending]')){const id=event.target.dataset.ending;changeItem(id,{final_frame:event.target.value});$('ig-plan-list').querySelector('[data-ending="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});}
   });
+  $('ig-plan-city').addEventListener('change',renderPlan);$('ig-plan-month').addEventListener('change',renderPlan);
+  $('ig-preview-close').addEventListener('click',()=>$('ig-preview-dialog').close());
   $('ig-plan-list').addEventListener('input',event=>{
     const input=event.target;if(!input.matches('[data-note]'))return;
     const id=input.dataset.note,valid=Array.from(input.value).length<=2000;
@@ -175,7 +212,6 @@
     invalidNotes.delete(id);state.items[id]={...value(id),note:input.value};renderExport();
     clearTimeout(saveTimer);saveTimer=setTimeout(persist,450);
   });
-  $('ig-include-calendar').addEventListener('change',renderExport);
   $('ig-json-export').addEventListener('click',()=>{
     if(invalidNotes.size){message('Bitte die zu langen Notizen kürzen, bevor du exportierst.');return;}
     if(saveTimer)persist();
@@ -235,17 +271,17 @@
         if(!response.ok)throw Error('Bild konnte nicht geladen werden: '+row.id);
         const bytes=new Uint8Array(await response.arrayBuffer());
         if(bytes[0]!==0xff||bytes[1]!==0xd8||bytes[2]!==0xff)throw Error('Keine gültige JPEG-Datei: '+row.id);
-        files.push({name:row.filename,data:bytes});
+        files.push(...(row.format==='original'?[{name:row.filename,data:bytes}]:await window.InstagramMedia.renderFiles(row,bytes)));
       }
       // Recheck calendar changes that arrived while the JPEGs were loading.
       if(local)await refreshLocal(true);
       if(calendarError)throw Error('Die Kalenderauswahl hat sich geändert. Bitte den Export neu starten.');
       const latest=currentExport();
       if(JSON.stringify(latest.rows)!==JSON.stringify(plan.rows))throw Error('Die Planung oder Kalenderbelegung hat sich geändert. Bitte den Export neu starten.');
-      const manifest={version:1,type:'instagram-export',year:2027,selection_revision:state.revision,calendar_source_ids:[...occupied.keys()],exported:plan.rows.map(row=>({...row,file:row.filename,publish_date:'',publish_time:''})),excluded:plan.excluded.map(row=>({id:row.id,source_id:row.source_id,reason:'calendar-source'}))};
+      const manifest={version:1,type:'instagram-export',year:2027,selection_revision:state.revision,calendar_source_ids:[...occupied.keys()],exported:plan.rows.map(row=>({...row,file:row.filename,publish_date:'',publish_time:''})),excluded:plan.excluded.map(row=>({id:row.id,source_id:row.source_id,reason:row.reason}))};
       files.push({name:'Auswahl.json',data:json(state)},{name:'Manifest.json',data:json(manifest)},{name:'Planung.csv',data:core.planningCsv(plan.rows)});
       download(core.createZip(files),'Toskana-2027-Instagram-Bildpaket.zip','application/zip');
-      $('ig-export-status').textContent=plan.rows.length+' unbeschnittene Bilder im ZIP bereitgestellt.';
+      $('ig-export-status').textContent=plan.rows.length+' Motive mit '+plan.rows.reduce((n,row)=>n+row.files.length,0)+' Bilddateien im gewählten Format bereitgestellt.';
     }catch(error){$('ig-export-status').textContent=error.message+' Es wurde kein unvollständiges Bildpaket exportiert.';}
     finally {exporting=false;renderExport();}
   });
@@ -286,7 +322,7 @@
       render();message('Kalenderbelegung aus dem anderen Fenster aktualisiert. Vormerkungen bleiben erhalten.');
     }
   });
-  window.addEventListener('beforeunload',event=>{if(pending||saveTimer||invalidNotes.size||storageUnavailable){event.preventDefault();event.returnValue='';}});
+  window.addEventListener('beforeunload',event=>{if(pending||saveTimer||invalidNotes.size||storageUnavailable||unsavedConflicts){event.preventDefault();event.returnValue='';}});
   if(local){
     window.addEventListener('focus',refreshLocal);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLocal();});

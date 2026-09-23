@@ -24,7 +24,12 @@ const value = id => ({...defaults(),...state.items[id]});
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asset = path => prefix + 'assets/' + path;
 const curated = item => !policy.preferred_artists[item.place_slug] || policy.preferred_artists[item.place_slug].includes(item.artist.slug);
-const clashes = item => rules.conflicts(item,month,state,catalog,policy.cover_image_id);
+const clashes = item => {
+  const result=rules.conflicts(item,month,state,catalog,policy.cover_image_id);
+  const instagram=window.InstagramCalendarGuard?.conflict(item.source_id);
+  if(instagram)result.push({kind:'instagram',label:instagram});
+  return result;
+};
 const offered = item => $('show-all-variants').checked || (curated(item) && !clashes(item).length);
 const shortArtist = item => item.artist.name.replace('Pierre-Auguste ','').replace('Claude ','').replace('Paul ','').replace('Vincent ','').replace('Giovanni ','');
 function validState(s) {
@@ -90,22 +95,22 @@ function renderFlow() {
   const sourceCount=videoStills?`${citySources.length-videoStills} Fotos · ${videoStills} Videostandbilder`:`${citySources.length} Originalfotos`;
   const currentSource=citySources.find(s=>s.id===photo);
   $('source-select').disabled=!city;
-  $('source-select').innerHTML=`<option value="">${city?'Foto wählen …':'Zuerst einen Ort wählen'}</option>`+citySources.map((s,index)=>`<option value="${escape(s.id)}">${index+1}. ${escape(s.caption)}</option>`).join('');
+  $('source-select').innerHTML=`<option value="">${city?'Foto wählen …':'Zuerst einen Ort wählen'}</option>`+citySources.map((s,index)=>`<option value="${escape(s.id)}">${index+1}. ${escape(s.caption)}${window.InstagramCalendarGuard.conflict(s.id)?' · für Instagram gewählt':''}</option>`).join('');
   $('source-select').value=photo;
-  $('source-hint').textContent=currentSource?'Ausgewählt: '+currentSource.caption:city?sourceCount+' · unten auch als Bildvorschau.':'Erst den Ort, dann das konkrete Foto wählen.';
+  $('source-hint').textContent=currentSource?(window.InstagramCalendarGuard.conflict(photo)||'Ausgewählt: '+currentSource.caption):city?sourceCount+' · unten auch als Bildvorschau.':'Erst den Ort, dann das konkrete Foto wählen.';
   $('source-choice').hidden=!city;
   $('source-description').textContent=sourceCount+(currentSource?' · Ausgewählt: '+currentSource.caption:' · Klicke auf ein Bild. Danach den Maler in Schritt 4 wählen.');
   $('instagram-link').href='#atelier-instagram';
   $('source-options').innerHTML=citySources.map(s=>{
     const variants=catalog.filter(i=>i.source_id===s.id);
-    return `<button type="button" class="source-option" data-source="${escape(s.id)}" aria-pressed="${s.id===photo}" aria-label="${escape(s.caption+' als Ausgangsfoto wählen')}"><img src="${escape(asset(s.asset))}" alt="${escape(s.caption)}" loading="lazy"><strong>${s.id===photo?'✓ ':''}${escape(s.caption)}</strong><span>${variants.length} gemalte Varianten · ${escape(s.filename)}</span></button>`;
+    return `<button type="button" class="source-option" data-source="${escape(s.id)}" aria-pressed="${s.id===photo}" aria-label="${escape(s.caption+' als Ausgangsfoto wählen')}"><img src="${escape(asset(s.asset))}" alt="${escape(s.caption)}" loading="lazy"><strong>${s.id===photo?'✓ ':''}${escape(s.caption)}</strong><span>${window.InstagramCalendarGuard.conflict(s.id)?'Für Instagram gewählt · ':''}${variants.length} gemalte Varianten · ${escape(s.filename)}</span></button>`;
   }).join('');
   const choices=catalog.filter(i=>i.source_id===photo&&($('show-all-variants').checked||curated(i)||i.artist.slug===artist));
   const painters=[...new Map(choices.map(i=>[i.artist.slug,i])).values()];
   $('artist-select').disabled=!photo;
   $('artist-select').innerHTML=`<option value="">${photo?'Maler wählen …':'Zuerst ein Foto wählen'}</option>`+painters.map(i=>{
     const conflict=clashes(i)[0];
-    return `<option value="${escape(i.artist.slug)}" ${conflict?'disabled':''}>${escape(i.artist.name+(conflict?' · belegt: '+(conflict.month==='cover'?'Titel':months[conflict.month-1]):''))}</option>`;
+    return `<option value="${escape(i.artist.slug)}" ${conflict?'disabled':''}>${escape(i.artist.name+(conflict?' · belegt: '+(conflict.kind==='instagram'?'Instagram':conflict.month==='cover'?'Titel':months[conflict.month-1]):''))}</option>`;
   }).join('');
   $('artist-select').value=artist;
   $('artist-hint').textContent=ready()?'Darunter kannst du die Farbvarianten dieses Fotos vergleichen.':photo?(painters.length?'Wähle die Handschrift für genau dieses Foto.':'Für dieses Foto sind nur frühere Malervarianten verfügbar. Aktiviere den Archivschalter oder wähle ein anderes Foto.'):'Die passenden Maler erscheinen nach der Fotoauswahl.';
@@ -228,7 +233,7 @@ function renderAvailability() {
   const conflicts=ready()?clashes(active):[];
   $('save-combination').disabled=blocked||!ready()||conflicts.length>0;
   $('combination-availability').classList.toggle('is-conflict',conflicts.length>0);
-  $('combination-availability').textContent=conflicts.length?conflicts.map(c=>c.label).join(' ')+(conflicts.some(c=>c.month==='cover')?' Für den Titel reserviert. Wähle einen anderen Ort und Maler.':' Gib die bisherige Belegung im Jahresplan frei, um neu zuzuordnen.'):'Ort und Maler sind für '+months[month-1]+' verfügbar.';
+  $('combination-availability').textContent=conflicts.length?conflicts.map(c=>c.label).join(' ')+(conflicts.some(c=>c.kind==='instagram')?'':conflicts.some(c=>c.month==='cover')?' Für den Titel reserviert. Wähle einen anderen Ort und Maler.':' Gib die bisherige Belegung im Jahresplan frei, um neu zuzuordnen.'):'Ort und Maler sind für '+months[month-1]+' verfügbar.';
   if(ready()&&value(active.id).month&&value(active.id).month!==month&&!conflicts.length)$('combination-availability').textContent='Beim Speichern wird dieses Motiv von '+months[value(active.id).month-1]+' nach '+months[month-1]+' verschoben.';
 }
 function renderYear() {
@@ -287,7 +292,7 @@ $('prepare-move').addEventListener('click',()=>{
 $('only-favorites').addEventListener('change',renderMatrix);
 $('show-all-variants').addEventListener('change',render);
 $('favorite-combination').addEventListener('click',()=>{if(blocked)return message('Bitte erst den Speicherstand prüfen.');state.items[active.id]={...value(active.id),favorite:!value(active.id).favorite};render();persist();});
-$('save-combination').addEventListener('click',()=>{
+$('save-combination').addEventListener('click',async()=>{
   if(blocked)return message('Bitte erst den Speicherstand prüfen.');
   if(!ready())return message('Bitte zuerst Monat, Ort, Foto und Maler wählen.');
   if(clashes(active).length)return message(clashes(active).map(c=>c.label).join(' '));
@@ -296,7 +301,8 @@ $('save-combination').addEventListener('click',()=>{
   const next=JSON.parse(JSON.stringify(state));
   if(occupied)next.items[occupied.id]={...value(occupied.id),month:null};
   next.items[active.id]={...value(active.id),month,layout};
-  try {rules.assertUnique(next,catalog,policy.cover_image_id);} catch(error){return message(error.message);}
+  const before=JSON.stringify(state);
+  try {rules.assertUnique(next,catalog,policy.cover_image_id);await window.InstagramCalendarGuard.check(next,state);if(before!==JSON.stringify(state))throw Error('Die Auswahl wurde inzwischen geändert. Bitte erneut speichern.');} catch(error){return message(error.message);}
   state=next;render();persist();
 });
 $('atelier-months').addEventListener('click',event=>{
@@ -317,6 +323,7 @@ $('enlarge-preview').addEventListener('click',()=>$('preview-dialog').showModal(
 $('atelier-print').addEventListener('click',()=>window.print());
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
 window.addEventListener('storage',event=>{if((event.key===storageKey||event.key===null)&&!local){blocked=true;renderAvailability();renderInstagram();message('Die Auswahl wurde in einem anderen Fenster geändert. Bitte neu laden.');}});
+window.addEventListener('instagram-selection-change',()=>{renderFlow();renderAvailability();});
 render();
 if(location.hash==='#vergleich'&&city)$('vergleich').open=true;
 try {rules.assertUnique(state,catalog,policy.cover_image_id);} catch(error){message('Im bisherigen Stand gibt es doppelte Belegungen. Bitte im Jahresplan auflösen: '+error.message);}

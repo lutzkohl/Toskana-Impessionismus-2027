@@ -4,6 +4,7 @@ const catalog = JSON.parse(document.getElementById('catalog-data').textContent);
 const initial = JSON.parse(document.getElementById('selection-data').textContent);
 const policy = JSON.parse(document.getElementById('selection-policy').textContent);
 const rules = window.CalendarSelectionRules;
+const instagram = window.InstagramCalendarGuard;
 const local = document.body.dataset.mode === 'local';
 const prefix = document.body.dataset.prefix;
 const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
@@ -77,14 +78,14 @@ function render() {
     card.querySelector('.month-select').value=v.month||'';card.querySelector('.rating').value=v.stars;
     for(const option of card.querySelector('.month-select').options) {
       const conflicts=option.value?rules.conflicts(item,Number(option.value),state,catalog,policy.cover_image_id):[];
-      option.disabled=conflicts.length>0;
+      option.disabled=conflicts.length>0||!!(option.value&&instagram.conflict(item.source_id));
       option.title=conflicts.map(c=>c.label).join(' ');
     }
     let availability=card.querySelector('.assignment-availability');
     if(!availability){availability=document.createElement('p');availability.className='assignment-availability';card.querySelector('.month-select').closest('label').after(availability);}
     const conflicts=rules.conflicts(item,v.month||item.suggested_month,state,catalog,policy.cover_image_id);
-    availability.textContent=conflicts.map(c=>c.label).join(' ');
-    availability.hidden=!conflicts.length;
+    availability.textContent=[...conflicts.map(c=>c.label),instagram.conflict(item.source_id)].filter(Boolean).join(' ');
+    availability.hidden=!availability.textContent;
     if(document.activeElement!==card.querySelector('.note')) card.querySelector('.note').value=v.note;
     card.querySelector('.preview-link').href=previewURL(item,v.month||item.suggested_month);
     card.hidden=(filter==='favorite'&&!v.favorite)||(filter==='assigned'&&!v.month);
@@ -98,7 +99,7 @@ document.querySelectorAll('.art-card').forEach(card=>{
   card.querySelector('.favorite').addEventListener('click',()=>update(id,{favorite:!value(id).favorite}));
   card.querySelector('.rating').addEventListener('change',e=>update(id,{stars:Number(e.target.value)}));
   card.querySelector('.note').addEventListener('change',e=>update(id,{note:e.target.value}));
-  card.querySelector('.month-select').addEventListener('change',e=>{
+  card.querySelector('.month-select').addEventListener('change',async e=>{
     if(blocked){render();return tell('Bitte erst den Speicherstand prüfen.');}
     const month=e.target.value?Number(e.target.value):null;
     const conflicts=month?rules.conflicts(byId.get(id),month,state,catalog,policy.cover_image_id):[];
@@ -108,7 +109,7 @@ document.querySelectorAll('.art-card').forEach(card=>{
     const next=clone(state);
     if(occupied)next.items[occupied.id]={...value(occupied.id),month:null};
     next.items[id]={...value(id),month};
-    if(month){try{rules.assertUnique(next,catalog,policy.cover_image_id);}catch(error){render();return tell(error.message);}}
+    if(month){try{const before=JSON.stringify(state);rules.assertUnique(next,catalog,policy.cover_image_id);await instagram.check(next,state);if(before!==JSON.stringify(state))throw Error('Die Auswahl wurde inzwischen geändert. Bitte erneut wählen.');}catch(error){render();return tell(error.message);}}
     state=next;render();persist();
   });
 });
@@ -120,11 +121,12 @@ document.getElementById('export-selection').addEventListener('click',()=>{
 document.getElementById('open-import').addEventListener('click',()=>document.getElementById('import-selection').click());
 document.getElementById('import-selection').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;
-  try {if(blocked)throw Error('Bitte erst den Speicherstand prüfen.');if(file.size>100000)throw Error('Die Auswahldatei ist zu groß.');const imported=valid(JSON.parse(await file.text()),true);if(Object.keys(state.items).length && !confirm('Die aktuelle Auswahl durch die importierte Auswahl ersetzen?'))return;state=imported;render();persist();tell('Auswahl übernommen.');}
+  try {if(blocked)throw Error('Bitte erst den Speicherstand prüfen.');if(file.size>100000)throw Error('Die Auswahldatei ist zu groß.');const imported=valid(JSON.parse(await file.text()),true);await instagram.check(imported,state);if(Object.keys(state.items).length && !confirm('Die aktuelle Auswahl durch die importierte Auswahl ersetzen?'))return;state=imported;render();persist();tell('Auswahl übernommen.');}
   catch(error){tell(error.message);}
   finally{e.target.value='';}
 });
 render();
 try {rules.assertUnique(state,catalog,policy.cover_image_id);} catch(error){status.textContent='Im bisherigen Stand gibt es doppelte Belegungen. Bitte die Monatszuordnung korrigieren: '+error.message;}
 window.addEventListener('storage',event=>{if(event.key===key&&!local){blocked=true;status.textContent='Die Auswahl wurde in einem anderen Fenster geändert. Bitte neu laden.';}});
+window.addEventListener('storage',event=>{if(event.key==='toskana-2027-instagram-v1'&&!local)render();});
 })();

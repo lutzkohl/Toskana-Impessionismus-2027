@@ -25,21 +25,20 @@
 
   function contextItem(){return pool.find(item=>item.place_slug===ctx?.city);}
   function folder(){return core.collectionFolder(contextItem(),ctx.month);}
-  function usedImages(){
+  function usedSources(){
     const occupied=core.calendarSources(ctx.calendar,pool,policy);
-    return new Set([...occupied.values()].flat().map(entry=>entry.id).concat(ctx.draftId||[]));
+    return new Set(occupied.keys());
   }
   function candidates(){
-    const used=usedImages();
-    return pool.filter(item=>item.kind==='painting'&&item.place_slug===ctx.city&&!used.has(item.id))
+    const used=usedSources();
+    return pool.filter(item=>item.kind==='painting'&&item.place_slug===ctx.city&&!used.has(item.source_id))
       .sort((a,b)=>(sourceOrder.get(a.source_id)??0)-(sourceOrder.get(b.source_id)??0));
   }
   function belongs(item){return value(item.id).selected&&core.collectionMonth(item,value(item.id),ctx.calendar,pool)===ctx.month;}
   function plan(){
-    const scoped={...state,items:Object.fromEntries(pool.filter(item=>item.kind==='painting'&&item.place_slug===ctx.city&&belongs(item)).map(item=>[item.id,value(item.id)]))};
-    const result=core.exportPlan(scoped,pool,ctx.calendar,policy);
-    result.excluded.push(...result.rows.filter(row=>row.id===ctx.draftId));
-    result.rows=result.rows.filter(row=>row.id!==ctx.draftId);
+    const result=core.exportPlan(state,pool,ctx.calendar,policy);
+    const inScope=row=>row.kind==='painting'&&row.place_slug===ctx.city&&belongs(row);
+    result.rows=result.rows.filter(inScope);result.excluded=result.excluded.filter(inScope);
     return result;
   }
   function render(){
@@ -50,18 +49,22 @@
     try {items=candidates();exportPlan=plan();occupied=core.calendarSources(ctx.calendar,pool,policy);}catch(error){blocked='Die Kalenderbelegung konnte nicht geprüft werden. Bitte neu laden.';}
     const name=folder(),count=exportPlan?.rows.length||0;
     $('aig-folder').textContent=name;
-    $('aig-count').textContent=count+' '+(count===1?'Bild':'Bilder')+' in dieser Sammlung'+(exportPlan?.excluded.length?' · '+exportPlan.excluded.length+' Kalenderbilder ausgespart':'');
+    $('aig-count').textContent=count+' '+(count===1?'Motiv':'Motive')+' in dieser Sammlung'+(exportPlan?.excluded.length?' · '+exportPlan.excluded.length+' Konflikte ausgespart':'');
     $('aig-summary').textContent='Übrige Gemälde auswählen · '+items.length+' Varianten';
     $('aig-plan-link').href=prefix+'instagram/?ort='+encodeURIComponent(ctx.city)+'#planung';
     $('aig-zip').textContent=name+' als ZIP laden';
     $('aig-zip').disabled=!!blocked||exporting||!count;
     $('aig-local').hidden=!local;$('aig-local').disabled=!!blocked||exporting||!count;
     $('aig-grid').innerHTML=items.map(item=>{
-      const saved=value(item.id),needsRelease=saved.selected&&core.isCalendarBlocked(item,saved,occupied);
-      const selected=belongs(item)&&!needsRelease;
+      const saved=value(item.id),selected=belongs(item);
+      const sibling=pool.find(other=>other.id!==item.id&&other.source_id===item.source_id&&value(other.id).selected);
       const previous=saved.selected&&!belongs(item)?core.collectionFolder(item,core.collectionMonth(item,saved,ctx.calendar,pool)):'';
-      return `<article class="aig-card ${selected?'is-selected':''}"><button type="button" class="aig-image" data-ig-enlarge="${escape(item.id)}" aria-label="${escape(item.artist+' — '+item.title+' vergrößern')}"><img src="${escape(asset(item))}" alt="${escape(item.title+' — '+item.artist)}" loading="lazy"></button><div class="aig-card-copy"><p class="aig-source">${escape(sources.get(item.source_id)?.caption||item.title)}</p><strong>${escape(item.artist)}</strong><p>${escape(item.palette||item.title)}</p><label><input type="checkbox" data-ig-choose="${escape(item.id)}" ${selected?'checked':''} ${blocked||exporting?'disabled':''}><span>${previous?'Nach '+escape(name)+' verschieben':needsRelease?'Andere Fassung freigeben':'Für Instagram wählen'}</span></label>${previous?'<small>Bisher: '+escape(previous)+'</small>':''}${needsRelease?'<small>Bisher wegen des Kalenderfotos vom Export ausgenommen.</small>':''}</div></article>`;
+      return `<article class="aig-card ${selected?'is-selected':''}"><button type="button" class="aig-image" data-ig-enlarge="${escape(item.id)}" aria-label="${escape(item.artist+' — '+item.title+' vergrößern')}"><img src="${escape(asset(item))}" alt="${escape(item.title+' — '+item.artist)}" loading="lazy"></button><div class="aig-card-copy"><p class="aig-source">${escape(sources.get(item.source_id)?.caption||item.title)}</p><strong>${escape(item.artist)}</strong><p>${escape(item.palette||item.title)}</p><label><input type="checkbox" data-ig-choose="${escape(item.id)}" ${selected?'checked':''} ${blocked||exporting?'disabled':''}><span>${previous?'Nach '+escape(name)+' verschieben':sibling?'Ersetzt '+escape(sibling.artist):'Für Instagram wählen'}</span></label>${previous?'<small>Bisher: '+escape(previous)+'</small>':''}</div></article>`;
     }).join('');
+    const selected=pool.filter(item=>item.place_slug===ctx.city&&belongs(item));
+    const conflicts=new Set((exportPlan?.excluded||[]).map(row=>row.id));
+    $('aig-selected').innerHTML=selected.map(item=>`<article class="aig-selected-card"><img src="${escape(asset(item))}" alt="${escape(item.title)}" loading="lazy"><div><strong>${escape(item.artist||'Originalfoto')}</strong><p>${escape(sources.get(item.source_id)?.caption||item.title)}</p>${conflicts.has(item.id)?'<p class="ig-conflict">Konflikt: Motiv im Kalender oder mehrfach gewählt.</p>':''}<label>Beitragsformat<select data-ig-format="${escape(item.id)}" ${blocked||exporting?'disabled':''}>${Object.entries(core.formats).map(([id,label])=>`<option value="${id}" ${id===(value(item.id).format||'original')?'selected':''} ${id.startsWith('swipe')&&!(item.width>item.height)?'disabled':''}>${escape(label)}${id==='swipe-'+core.recommendedSegments(item.width,item.height)?' · empfohlen':''}</option>`).join('')}</select></label><button type="button" data-ig-remove="${escape(item.id)}" ${blocked||exporting?'disabled':''}>Abwählen</button></div></article>`).join('');
+    $('aig-selected').hidden=!selected.length;
     $('aig-empty').hidden=items.length>0;
     $('aig-alert').hidden=!blocked;$('aig-alert').textContent=blocked;
     renderViewer(items,occupied);
@@ -71,6 +74,7 @@
   }
   function persist(){
     const snapshot=core.validateSelection(state,pool);
+    window.InstagramCalendarGuard?.update(state);
     if(!local){
       assertBrowserFresh();state.revision++;
       const encoded=JSON.stringify(state);localStorage.setItem(key,encoded);lastStored=encoded;
@@ -88,18 +92,25 @@
     }).catch(error=>{blocked=error.message+' Bitte neu laden.';render();});
   }
   function choose(id,selected){
-    if(!id||blocked||exporting||!candidates().some(item=>item.id===id))return;
+    if(!id||blocked||exporting||(selected&&!candidates().some(item=>item.id===id)))return;
     try {
       assertBrowserFresh();
-      state.items[id]={...value(id),selected,month:ctx.month,allow_calendar_variant:true};
+      state=core.chooseItem(state,pool,id,{selected,month:ctx.month},ctx.calendar,policy);
       persist();
     }catch(error){blocked=error.message+' Die Änderung konnte nicht gespeichert werden.';}
     render();
+    if(window.dispatchEvent)window.dispatchEvent(new Event('instagram-selection-change'));
   }
   $('aig-grid').addEventListener('change',event=>{
     const id=event.target.dataset.igChoose;
     choose(id,event.target.checked);
     $('aig-grid').querySelector('[data-ig-choose="'+id+'"]')?.focus({preventScroll:true});
+  });
+  $('aig-selected').addEventListener('click',event=>{const button=event.target.closest('[data-ig-remove]');if(button)choose(button.dataset.igRemove,false);});
+  $('aig-selected').addEventListener('change',event=>{
+    const id=event.target.dataset.igFormat;if(!id||blocked||exporting)return;
+    try{assertBrowserFresh();state=core.chooseItem(state,pool,id,{format:event.target.value},ctx.calendar,policy);persist();render();}
+    catch(error){status(error.message);}
   });
   $('aig-grid').addEventListener('click',event=>{
     const button=event.target.closest('[data-ig-enlarge]');if(!button)return;
@@ -181,7 +192,7 @@
       const selected=plan(),name=folder();
       if(!selected.rows.length)throw Error('Bitte zuerst übrige Gemälde auswählen.');
       if(onDisk){
-        const response=await fetch(prefix+'api/instagram/sammlung',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:serverRevision,calendar_revision:ctx.calendar.revision,place_slug:ctx.city,month:ctx.month,draft_id:ctx.draftId})});
+        const response=await fetch(prefix+'api/instagram/sammlung',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:serverRevision,calendar_revision:ctx.calendar.revision,place_slug:ctx.city,month:ctx.month})});
         const data=await response.json();
         if(!response.ok)throw Error(data.error||'Sammlung fehlgeschlagen.');
         status(data.count+' '+(data.count===1?'Bild':'Bilder')+' gesammelt in '+data.path+'/'+data.folder+'/');
@@ -195,14 +206,14 @@
           if(!response.ok)throw Error('Das Bild konnte nicht geladen werden: '+row.id);
           const bytes=new Uint8Array(await response.arrayBuffer());
           if(bytes[0]!==255||bytes[1]!==216||bytes[2]!==255)throw Error('Die Bilddatei ist kein gültiges JPEG: '+row.id);
-          files.push({name:row.filename,data:bytes});
+          files.push(...(row.format==='original'?[{name:row.filename,data:bytes}]:await window.InstagramMedia.renderFiles(row,bytes)));
         }
         await fresh();
         if(start!==collectionKey()||JSON.stringify(plan())!==JSON.stringify(selected))throw Error('Die Auswahl wurde geändert. Bitte die Sammlung erneut starten.');
         const manifest={version:1,type:'instagram-export',year:2027,selection_revision:state.revision,
           calendar_source_ids:[...core.calendarSources(ctx.calendar,pool,policy).keys()],
           exported:selected.rows.map(row=>({...row,file:row.filename,publish_date:'',publish_time:''})),
-          excluded:selected.excluded.map(row=>({id:row.id,source_id:row.source_id,reason:row.id===ctx.draftId||row.calendar.some(usage=>usage.id===row.id)?'calendar-image':'calendar-source'}))};
+          excluded:selected.excluded.map(row=>({id:row.id,source_id:row.source_id,reason:row.reason}))};
         files.push({name:'Auswahl.json',data:json(selected.selection)},{name:'Manifest.json',data:json(manifest)},{name:'Planung.csv',data:core.planningCsv(selected.rows)});
         download(core.createZip(files),'Instagram-'+name+'.zip');
         status(selected.rows.length+' '+(selected.rows.length===1?'Bild':'Bilder')+' bereitgestellt. ZIP entpacken: Darin liegt der Ordner '+name+'.');
