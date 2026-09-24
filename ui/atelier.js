@@ -12,7 +12,7 @@ const byId = new Map(catalog.map(item => [item.id, item]));
 const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const weekdays = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 const layouts = [
-  {id:'leiste', name:'Die klare Leiste', short:'Das ganze Bild oben. Tage und QR unten.', description:'Das ganze Bild bleibt sichtbar, ohne Beschnitt oder Verzerrung. Je nach Bildformat bleibt seitlich oder oben und unten Weißraum. Titel, Tagesleiste und QR-Code stehen darunter.'},
+  {id:'leiste', name:'Die klare Leiste', short:'Bild oben. Tage und QR unten.', description:'Das Bild steht über Titel, Tagesleiste und QR-Code. Die drei abgestimmten Kalenderzuschnitte erscheinen in 16:9; alle anderen Bilder behalten ihr Format. Breite Panoramen erhalten oben und unten Weißraum.'},
   {id:'lichtband', name:'Das Lichtband', short:'Ein helles Band direkt im Bild.', description:'Titel und Tage liegen auf einem durchscheinenden weißen Band. Der QR-Code bleibt auf reinem Weiß. Das Bild wird für die große Fläche beschnitten.'},
   {id:'seitenrand', name:'Der Seitenrand', short:'Das ganze Bild. Der Monat daneben.', description:'Das Bild bleibt vollständig sichtbar. Rechts stehen der Monat als Wochenraster und darunter der QR-Code.'},
   {id:'schwebend', name:'Die schwebende Karte', short:'Ein Monatsraster über der Bildkante.', description:'Eine weiße Kalenderkarte überlappt den unteren Bildrand. Der QR-Code sitzt neben dem Wochenraster. Das Bild wird leicht beschnitten.'}
@@ -168,7 +168,7 @@ function paper(kind, interactive=false) {
   const cells=blank.repeat(days[0].weekday)+days.map(d=>`<span class="date ${d.cls}"><b>${d.day}</b></span>`).join('')+blank.repeat(42-days[0].weekday-days.length);
   const qr=`<img src="${escape(asset(active.qr_asset))}" alt="QR-Code zur Begleitseite">`;
   return `<article class="calendar-design layout-${kind}" style="--month-name-size:${months[month-1].length>7?3.5:4.6}cqw" aria-label="${escape(active.place)}, ${months[month-1]} 2027, ${layoutById.get(kind).name}">
-    <img class="paint" src="${escape(asset(active.asset))}" alt="${escape(active.place+' nach '+active.artist.name)}">
+    <img class="paint" src="${escape(asset(kind==='leiste' && active.calendar_asset ? active.calendar_asset : active.asset))}" alt="${escape(active.place+' nach '+active.artist.name)}">
     <div class="print-title"><h3>${escape(active.place)}</h3><p>Im Stil von ${escape(active.artist.name)}</p><small>Nach „${escape(active.reference.title)}“, ${escape(active.reference.year)}</small></div>
     <div class="date-zone"><div class="print-month"><strong>${months[month-1]}</strong><span>2027</span></div>
       <div class="date-list" style="--day-count:${days.length}">${days.map(d=>`<div class="date ${d.cls}"><span>${d.label}</span><b>${d.day}</b></div>`).join('')}</div>
