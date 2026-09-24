@@ -2,5 +2,9 @@
  function entries(layer,pool,calendar,instagram,policy,draft){const cal=calendar===null?draft:calendar;return pool.flatMap(i=>{const cover=i.id===policy.cover_image_id,month=cal?.items?.[i.id]?.month||null,planned=cal?.items?.[i.id]?.draft===true,ig=instagram?.items?.[i.id]?.selected===true;if(!cover&&!month&&!planned&&!(layer==='all'&&ig))return [];return [{...i,uses:[...(cover?['Titelseite']:month?['Kalender · '+String(month).padStart(2,'0')]:planned?['Kalenderentwurf']:[]),...(layer==='all'&&ig?['Instagram']:[])]}];});}
  function valid(p){return !!p&&Number.isFinite(p.lat)&&Number.isFinite(p.lon)&&Math.abs(p.lat)<=90&&Math.abs(p.lon)<=180;}
  function groups(rows,locations){const groups=new Map();for(const item of rows){const p=locations[item.source_id];if(!valid(p))continue;const key=p.lat+','+p.lon;if(!groups.has(key))groups.set(key,{...p,items:[]});groups.get(key).items.push(item);}return [...groups.values()];}
- return {entries,groups,valid};
+ function imageAsset(item,calendarImages={}){const asset=Object.prototype.hasOwnProperty.call(calendarImages,item.id)?calendarImages[item.id]:item.asset;if(typeof asset!=='string'||!asset.split('/').every(part=>/^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$/.test(part))||!(/\.jpe?g$/i.test(asset)||/\/kalender-16x9\.svg$/.test(asset)))throw Error('Ungültiger Bildpfad für die Karte.');return asset;}
+ function releaseTime(post){return typeof post.image_id==='string'&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(post.image_id)&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(post.scheduled_at)?Date.parse(post.scheduled_at):NaN;}
+ function scheduledSelection(posts,now=Date.now()){const items={};for(const post of posts||[]){if(releaseTime(post)<=now)items[post.image_id]={selected:true,scheduled_at:post.scheduled_at};}return {items};}
+ function nextRelease(posts,now=Date.now()){const next=(posts||[]).map(releaseTime).filter(time=>time>now);return next.length?Math.min(...next):null;}
+ return {entries,groups,valid,imageAsset,scheduledSelection,nextRelease};
 });

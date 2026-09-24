@@ -316,7 +316,14 @@ $('atelier-export').addEventListener('click',()=>{
   const link=document.createElement('a');link.href=url;link.download='Toskana-2027-Auswahl.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 $('open-origins').addEventListener('click',()=>{
-  $('origins-content').innerHTML=`<figure><img src="${escape(asset(active.photo_asset))}" alt="${escape(active.source_caption)}"><figcaption><h3>Unser ${active.source_type==='video-frame'?'Videostandbild':'Foto'} aus ${escape(active.place)}</h3><p>${escape(active.source_caption)}</p></figcaption></figure><figure><img src="${escape(asset(active.reference_asset))}" alt="${escape(active.reference.title)}"><figcaption><h3>${escape(active.artist.name)}</h3><p>„${escape(active.reference.title)}“, ${escape(active.reference.year)}</p><a href="${escape(active.reference.source)}" target="_blank" rel="noopener">${escape(active.reference.source_label)}</a></figcaption></figure>`;
+  if(!active)return;
+  const reference=active.reference;
+  const documented=active.reference_image_documented===true&&Boolean(active.reference_asset);
+  const referenceImage=documented?`<img src="${escape(asset(active.reference_asset))}" alt="${escape(reference.title)}">`:'';
+  const credit=documented&&reference.credit?`<p>${escape(reference.credit)}</p>`:'';
+  const licence=documented&&reference.license_url?` · <a href="${escape(reference.license_url)}" target="_blank" rel="noopener">${escape(reference.license_label||'Lizenz')}</a>`:'';
+  const fileSource=documented&&reference.extra_source?` · <a href="${escape(reference.extra_source)}" target="_blank" rel="noopener">${escape(reference.extra_label||'Bildquelle')}</a>`:'';
+  $('origins-content').innerHTML=`<figure><img src="${escape(asset(active.photo_asset))}" alt="${escape(active.source_caption)}"><figcaption><h3>Unser ${active.source_type==='video-frame'?'Videostandbild':'Foto'} aus ${escape(active.place)}</h3><p>${escape(active.source_caption)}</p></figcaption></figure><figure>${referenceImage}<figcaption><h3>${escape(active.artist.name)}</h3><p>„${escape(reference.title)}“, ${escape(reference.year)}</p>${credit}<p><a href="${escape(reference.source)}" target="_blank" rel="noopener">${escape(reference.source_label)}</a>${licence}${fileSource}</p></figcaption></figure>`;
   $('origins-dialog').showModal();
 });
 $('enlarge-preview').addEventListener('click',()=>$('preview-dialog').showModal());
