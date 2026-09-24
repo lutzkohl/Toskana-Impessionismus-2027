@@ -32,7 +32,7 @@
     const d={id:item.id,instagram:occupied().has(current)?false:ig?true:old?false:!state.workflow.skipped.includes(current),wallpaper:P.downloadEligible(item,pool)&&state.workflow.wallpapers.includes(item.id),format:v.format||rec.format,final_frame:v.final_frame||'full',note:v.note||'',crop:clone(state.workflow.photo_crops[item.id]||rec.crop)};
     drafts.set(current,d);return d;
   }
-  function candidates(){return sources.filter(s=>(!city||s.place_slug===city)&&(!search||[s.filename,s.caption,s.place,s.photographer].join(' ').toLowerCase().includes(search))&&(filter==='all'||filter==='open'&&!P.reviewed(state,s.id,pool)||filter==='done'&&P.reviewed(state,s.id,pool)||filter==='instagram'&&!!selected(s.id)||filter==='calendar'&&occupied().has(s.id)||filter==='wallpaper'&&variants(s.id).some(i=>state.workflow.wallpapers.includes(i.id))));}
+  function candidates(){return sources.filter(s=>(!city||s.place_slug===city)&&(!search||[s.id,s.filename,s.caption,s.place,s.photographer].join(' ').toLowerCase().includes(search))&&(filter==='all'||filter==='open'&&!P.reviewed(state,s.id,pool)||filter==='done'&&P.reviewed(state,s.id,pool)||filter==='instagram'&&!!selected(s.id)||filter==='calendar'&&occupied().has(s.id)||filter==='wallpaper'&&variants(s.id).some(i=>state.workflow.wallpapers.includes(i.id))));}
   function status(source){return dirty.has(source)?'Ungespeichert':P.reviewed(state,source,pool)?'✓ Geprüft':occupied().has(source)?'Kalender':selected(source)?'Instagram gewählt':'Noch offen';}
   function setDirty(){dirty.add(current);renderStatus();}
   function renderStatus(){
