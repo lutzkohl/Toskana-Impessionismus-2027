@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#243b36">
   <title>Fotowerkstatt · Maler, Instagram &amp; 16:9 · Toskana 2027</title>
   <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/style.css?v=20260924-spenden">
-  <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/photo-workshop.css?v=2cad534dbcba">
+  <link rel="stylesheet" href="/Toskana-Impessionismus-2027/ui/photo-workshop.css?v=9da46e4cb293">
 </head>
 <body data-mode="public" data-prefix="/Toskana-Impessionismus-2027/">
 <a class="skip" href="#main">Zum Inhalt</a>
@@ -41,7 +41,7 @@
       <div class="pw-original-row"><figure><img id="pw-original" alt=""><figcaption id="pw-original-caption"></figcaption></figure><div><h3>Welche Malerfassung?</h3><p id="pw-recommendation"></p><p class="pw-subtle">Die Empfehlung ist ein Vorschlag. Jede vorhandene Fassung ist wählbar, auch wenn der Maler bereits im Kalender vorkommt.</p></div></div>
       <div id="pw-variants" class="pw-variants" aria-label="Alle generierten Fassungen dieser Aufnahme"></div>
       <div class="pw-editors">
-        <section class="pw-crop-editor" aria-labelledby="pw-crop-title"><h3 id="pw-crop-title">Der 16:9-Rahmen</h3><p id="pw-crop-reason" class="pw-subtle"></p>
+        <section id="pw-crop-editor" class="pw-crop-editor" aria-labelledby="pw-crop-title"><h3 id="pw-crop-title">Der 16:9-Rahmen</h3><p id="pw-crop-reason" class="pw-subtle"></p>
           <div id="pw-crop-stage" class="pw-crop-stage"><img id="pw-crop-art" alt=""><div id="pw-frame" class="pw-frame" tabindex="0" role="group" aria-label="16:9-Rahmen verschieben" aria-describedby="pw-frame-help"><i></i><i></i><i></i><i></i><span>16:9</span></div></div>
           <p id="pw-frame-help" class="pw-subtle">Den Rahmen ziehen oder mit ← → ↑ ↓ verschieben. Die Linien helfen bei der Drittelregel.</p>
           <label class="pw-mode">Rahmen<select id="pw-crop-mode"><option value="crop">16:9-Ausschnitt</option><option value="contain">Ganzes Gemälde mit Rand</option></select></label>
@@ -56,7 +56,7 @@
       <p id="pw-empty" hidden>Keine Aufnahme passt zu diesem Filter. Wähle einen anderen Ort oder „Alle Aufnahmen“.</p>
     </section>
   </div>
-  <section id="pw-export" class="pw-export"><div><h2>Eure Entscheidungen bleiben zusammen.</h2><p id="pw-export-summary"></p><p>Die Auswahl bleibt in diesem Browser. Ladet die Gesamtsicherung herunter, damit wir mit euren Entscheidungen später den Postingplan und das endgültige Download-Paket erstellen können.</p><p class="pw-subtle">Videoclips sind hier durch die bereits gemalten Standbilder vertreten. Die Originalclips bleiben für die spätere Reel-Planung erhalten. Das ZIP enthält die vorhandene Bildauflösung und vergrößert Bilder nicht künstlich.</p></div><div class="pw-export-actions"><button type="button" id="pw-backup" class="button">Gesamtsicherung herunterladen</button><button type="button" id="pw-plan" class="button secondary">Grundlage für den Postingplan</button><button type="button" id="pw-zip" class="button secondary">Geprüfte 16:9-Bilder als ZIP</button><a href="/Toskana-Impessionismus-2027/monatsrunde/#sicherung">Sicherung importieren</a><a href="/Toskana-Impessionismus-2027/instagram/#planung">Instagram-Auswahl &amp; Bildpakete</a><button type="button" id="pw-reload" class="pw-text-button">Gespeicherten Stand neu laden</button><p id="pw-export-status" role="status"></p></div></section>
+  <section id="pw-export" class="pw-export"><div><h2>Eure Entscheidungen bleiben zusammen.</h2><p id="pw-export-summary"></p><p>Die Auswahl bleibt in diesem Browser. Ladet die Gesamtsicherung herunter, damit wir mit euren Entscheidungen später den Postingplan und das endgültige Download-Paket erstellen können.</p><p class="pw-subtle">Hochformate sind ausschließlich für Instagram vorgesehen. In das 16:9-Paket kommen nur passende Querformate. Videoclips sind hier durch die bereits gemalten Standbilder vertreten; die Originalclips bleiben für spätere Reels erhalten. Das ZIP vergrößert die Bilder nicht künstlich.</p></div><div class="pw-export-actions"><button type="button" id="pw-backup" class="button">Gesamtsicherung herunterladen</button><button type="button" id="pw-plan" class="button secondary">Grundlage für den Postingplan</button><button type="button" id="pw-zip" class="button secondary">Geprüfte 16:9-Bilder als ZIP</button><a href="/Toskana-Impessionismus-2027/monatsrunde/#sicherung">Sicherung importieren</a><a href="/Toskana-Impessionismus-2027/instagram/#planung">Instagram-Auswahl &amp; Bildpakete</a><button type="button" id="pw-reload" class="pw-text-button">Gespeicherten Stand neu laden</button><p id="pw-export-status" role="status"></p></div></section>
   <noscript>Bitte JavaScript aktivieren, um Bilder auszuwählen und Rahmen zu verschieben.</noscript>
 </main>
 <dialog id="pw-slide-dialog" aria-label="Posting-Vorschau groß"><button type="button" id="pw-slide-close">Schließen ×</button><div id="pw-slide-large"></div><p id="pw-slide-label"></p></dialog>
@@ -70,6 +70,6 @@
 <footer class="site-footer"><p>Eigene Reisefotos. Historische Vorbilder. Mit KI neu gemalt.</p><p>Impressionismus und seine Weiterentwicklungen · Toskana 2027</p><p><a href="/Toskana-Impessionismus-2027/#unterstuetzen">Dentists for Africa unterstützen</a></p><p><a href="https://www.instagram.com/toskanaimpressionismus/" target="_blank" rel="noopener noreferrer">Auf Instagram: @toskanaimpressionismus ↗</a></p></footer>
 <dialog id="lightbox" aria-label="Bildansicht"><button type="button" class="close-dialog" aria-label="Bildansicht schließen">Schließen ×</button><img alt=""><p></p></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="/Toskana-Impessionismus-2027/ui/selection-rules.js?v=a5a81c058500" defer></script><script src="/Toskana-Impessionismus-2027/ui/instagram-core.js?v=ba97461ee3eb" defer></script><script src="/Toskana-Impessionismus-2027/ui/wallpaper-core.js?v=70bd92660592" defer></script><script src="/Toskana-Impessionismus-2027/ui/photo-workshop-core.js?v=f832837c26b8" defer></script><script src="/Toskana-Impessionismus-2027/ui/round-core.js?v=f350029dd5f4" defer></script><script src="/Toskana-Impessionismus-2027/ui/photo-workshop.js?v=fe80b057619c" defer></script>
+<script src="/Toskana-Impessionismus-2027/ui/selection-rules.js?v=a5a81c058500" defer></script><script src="/Toskana-Impessionismus-2027/ui/instagram-core.js?v=ba97461ee3eb" defer></script><script src="/Toskana-Impessionismus-2027/ui/wallpaper-core.js?v=70bd92660592" defer></script><script src="/Toskana-Impessionismus-2027/ui/photo-workshop-core.js?v=8c429679cecd" defer></script><script src="/Toskana-Impessionismus-2027/ui/round-core.js?v=f350029dd5f4" defer></script><script src="/Toskana-Impessionismus-2027/ui/photo-workshop.js?v=d01b5d238313" defer></script>
 <script src="/Toskana-Impessionismus-2027/ui/common.js" defer></script>
 </body></html>

@@ -39,9 +39,11 @@
     return JSON.stringify([id,siblings,!!v.selected,v.format||'original',v.final_frame||'full',v.note||'',b.workflow.wallpapers.includes(id),b.workflow.photo_crops?.[id]||null]);
   }
   function reviewed(b,source,pool){const r=b.workflow.photo_reviews?.[source];return !!r&&r.signature===signature(b,r.image_id,pool);}
+  function downloadEligible(item,pool){const source=pool.find(i=>i.kind==='original'&&i.source_id===item?.source_id);return !!item&&item.width>=item.height&&(!source||source.width>=source.height);}
   function choose(raw,draft,pool,policy){
     const b=clone(raw),item=pool.find(i=>i.id===draft.id&&i.kind==='painting');
     if(!item)throw Error('Bitte eine generierte Malerfassung wählen.');
+    if(draft.wallpaper&&!downloadEligible(item,pool))throw Error('Hochformate sind nur für Instagram vorgesehen, nicht für den 16:9-Download.');
     const previous=pool.filter(i=>i.source_id===item.source_id&&b.instagram.items[i.id]?.selected);
     b.instagram=I.chooseItem(b.instagram,pool,item.id,{selected:draft.instagram,format:draft.format,final_frame:draft.final_frame,note:draft.note},b.calendar,policy);
     if(!draft.instagram)for(const sibling of previous)b.instagram.items[sibling.id].selected=false;
@@ -51,11 +53,13 @@
     if(oldChoice&&oldChoice!==item.id)wallpapers.delete(oldChoice);
     if(draft.wallpaper)wallpapers.add(item.id);else wallpapers.delete(item.id);
     b.workflow.wallpapers=[...wallpapers].sort();
-    b.workflow.photo_crops={...(b.workflow.photo_crops||{}),[item.id]:validateCrop(draft.crop)};
+    b.workflow.photo_crops={...(b.workflow.photo_crops||{})};
+    if(downloadEligible(item,pool))b.workflow.photo_crops[item.id]=validateCrop(draft.crop);
+    else delete b.workflow.photo_crops[item.id];
     b.workflow.skipped=b.workflow.skipped.filter(id=>id!==item.source_id);
     if(!draft.instagram&&!I.calendarSources(b.calendar,pool,policy).has(item.source_id))b.workflow.skipped.push(item.source_id);
     b.workflow.photo_reviews={...(b.workflow.photo_reviews||{}),[item.source_id]:{image_id:item.id,at:new Date().toISOString(),signature:signature(b,item.id,pool)}};
     return b;
   }
-  return {validateCrop,validateExtras,cropRect,wallpaperGeometry,signature,reviewed,choose};
+  return {validateCrop,validateExtras,cropRect,wallpaperGeometry,signature,reviewed,choose,downloadEligible};
 });
