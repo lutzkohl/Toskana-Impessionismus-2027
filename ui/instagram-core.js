@@ -8,7 +8,7 @@
   'use strict';
   const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
   const validMonth=value=>value===null||(Number.isInteger(value)&&value>=1&&value<=12);
-  const formats={original:'Originalformat · unbeschnitten',portrait:'Einzelbild · 4:5',...Object.fromEntries([2,3,4,5,6].map(n=>['swipe-'+n,'Swipe · '+n+' Teile + Abschluss']))};
+  const formats={original:'Originalformat · unbeschnitten',portrait:'Einzelbild · 4:5',framed:'Einzelbild · ganzes Gemälde mit Rand (4:5)',...Object.fromEntries([2,3,4,5,6].map(n=>['swipe-'+n,'Swipe · '+n+' Teile + Abschluss']))};
   const recommendedSegments=(width,height)=>Math.min(6,Math.max(2,Math.round(width/height/0.8)));
   const emptySelection=()=>({version:1,type:'instagram-selection',year:2027,revision:0,items:{}});
 
@@ -115,6 +115,7 @@
       return {x:(canvasWidth-width*scale)/2,y:(h-height*scale)/2,width:width*scale,height:height*scale};
     };
     if(format==='portrait')return [{kind:'crop',width:w,height:h,draw:fit(w,true)}];
+    if(format==='framed')return [{kind:'full',width:w,height:h,draw:fit(w)}];
     if(width<=height)throw Error('Swipe-Posts benötigen ein Querformat.');
     const count=Number(format.slice(-1)),draw=fit(count*w,true);
     return [...Array.from({length:count},(_,i)=>({kind:'panorama',width:w,height:h,draw:{...draw,x:draw.x-i*w}})),
@@ -124,6 +125,7 @@
     const format=value.format||'original';
     if(format==='original')return [folder+'/'+item.id+'.jpg'];
     if(format==='portrait')return [folder+'/'+item.id+'/01-ausschnitt.jpg'];
+    if(format==='framed')return [folder+'/'+item.id+'/01-gesamtbild.jpg'];
     const count=Number(format.slice(-1));
     return Array.from({length:count+1},(_,i)=>folder+'/'+item.id+'/'+String(i+1).padStart(2,'0')+(i<count?'-panorama':'-abschluss')+'.jpg');
   }
