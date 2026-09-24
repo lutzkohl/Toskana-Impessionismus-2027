@@ -32,7 +32,7 @@
     const d={id:item.id,instagram:occupied().has(current)?false:ig?true:old?false:!state.workflow.skipped.includes(current),wallpaper:P.downloadEligible(item,pool)&&state.workflow.wallpapers.includes(item.id),format:v.format||rec.format,final_frame:v.final_frame||'full',note:v.note||'',crop:clone(state.workflow.photo_crops[item.id]||rec.crop)};
     drafts.set(current,d);return d;
   }
-  function candidates(){return sources.filter(s=>(!city||s.place_slug===city)&&(!search||[s.filename,s.caption,s.place].join(' ').toLowerCase().includes(search))&&(filter==='all'||filter==='open'&&!P.reviewed(state,s.id,pool)||filter==='done'&&P.reviewed(state,s.id,pool)||filter==='instagram'&&!!selected(s.id)||filter==='calendar'&&occupied().has(s.id)||filter==='wallpaper'&&variants(s.id).some(i=>state.workflow.wallpapers.includes(i.id))));}
+  function candidates(){return sources.filter(s=>(!city||s.place_slug===city)&&(!search||[s.filename,s.caption,s.place,s.photographer].join(' ').toLowerCase().includes(search))&&(filter==='all'||filter==='open'&&!P.reviewed(state,s.id,pool)||filter==='done'&&P.reviewed(state,s.id,pool)||filter==='instagram'&&!!selected(s.id)||filter==='calendar'&&occupied().has(s.id)||filter==='wallpaper'&&variants(s.id).some(i=>state.workflow.wallpapers.includes(i.id))));}
   function status(source){return dirty.has(source)?'Ungespeichert':P.reviewed(state,source,pool)?'✓ Geprüft':occupied().has(source)?'Kalender':selected(source)?'Instagram gewählt':'Noch offen';}
   function setDirty(){dirty.add(current);renderStatus();}
   function renderStatus(){
@@ -78,7 +78,7 @@
     const list=candidates();if(!list.some(s=>s.id===current))current=list[0]?.id||'';
     renderSources();renderStatus();if(!current)return;
     const source=sources.find(s=>s.id===current),d=currentDraft(),item=byId.get(d.id),rec=suggestions.sources[current],blockedSource=occupied().has(current),isVideo=source.source_type==='video';
-    $('pw-place').textContent=source.place;$('pw-filename').textContent=`${source.filename} · ${variants(current).length} Malerfassungen · ${list.findIndex(s=>s.id===current)+1} / ${list.length}`;
+    $('pw-place').textContent=source.place;$('pw-filename').textContent=`${source.filename}${source.photographer?' · Foto: '+source.photographer:''} · ${variants(current).length} Malerfassungen · ${list.findIndex(s=>s.id===current)+1} / ${list.length}`;
     const cal=calArt(current);$('pw-usage').textContent=blockedSource?cal?.id===policy.cover_image_id?'Titelmotiv · Für Instagram ausgespart; als Hintergrund weiterhin nutzbar.':`Kalenderbild · Monat ${state.calendar.items[cal?.id]?.month||''} · Für Instagram ausgespart; als Hintergrund weiterhin nutzbar.`:selected(current)?`Bisher für Instagram: ${selected(current).artist||'Originalfoto'} · Eine andere Fassung ersetzt diese erst beim Speichern.`:'Freies Motiv · Für Instagram ist eine Malerfassung möglich.';
     $('pw-original').src=prefix+'assets/'+source.asset;$('pw-original').alt=source.caption||source.filename;$('pw-original-caption').textContent=isVideo?'Euer Videostandbild · Originalclip für spätere Reels':'Euer Ausgangsfoto';
     $('pw-recommendation').textContent=`Mein Vorschlag: ${byId.get(rec.image_id).artist}. ${rec.reason}`;
@@ -86,9 +86,9 @@
     const downloadable=P.downloadEligible(item,pool);$('pw-crop-editor').hidden=!downloadable;document.querySelector('.pw-editors').classList.toggle('pw-instagram-only',!downloadable);if(!downloadable)d.wallpaper=false;
     $('pw-crop-art').src=asset(item);$('pw-crop-art').alt=item.title;$('pw-crop-reason').textContent=suggestions.variants[item.id].crop_reason;
     $('pw-wallpaper').checked=d.wallpaper;$('pw-instagram').checked=d.instagram;$('pw-instagram').disabled=blockedSource||blocked||busy;
-    $('pw-instagram-hint').textContent=!downloadable?'Hochformat · Nur für Instagram, ohne 16:9-Rahmen oder Download.':blockedSource?'Dieses Ausgangsfoto gehört zum Kalender. Für Instagram bitte eine andere Aufnahme wählen.':'Ein Maler pro Ausgangsfoto. Der Maler darf bei anderen Instagram-Motiven wieder vorkommen.';
+    $('pw-instagram-hint').textContent=!downloadable?'Hochformat · Für Social Media, ohne 16:9-Rahmen oder Download.':blockedSource?'Dieses Ausgangsfoto gehört zum Kalender. Für Instagram bitte eine andere Aufnahme wählen.':'Ein Maler pro Ausgangsfoto. Der Maler darf bei anderen Instagram-Motiven wieder vorkommen.';
     $('pw-note').value=d.note;renderCrop();renderPost();renderStatus();
-    const url=new URL(location.href);url.searchParams.set('foto',current);if(city)url.searchParams.set('ort',city);else url.searchParams.delete('ort');history.replaceState(null,'',url);
+    const url=new URL(location.href);url.searchParams.set('foto',current);if(city)url.searchParams.set('ort',city);else url.searchParams.delete('ort');if(search)url.searchParams.set('suche',search);else url.searchParams.delete('suche');history.replaceState(null,'',url);
   }
   async function assertFresh(){
     if(blocked||busy)throw Error('Bitte den gespeicherten Stand neu laden.');
@@ -118,7 +118,7 @@
   function navigate(delta){if(busy)return;const list=candidates(),n=list.findIndex(s=>s.id===current),next=list[n+delta];if(next){current=next.id;render();}}
   function downloadRows(){return pool.filter(i=>i.kind==='painting'&&P.downloadEligible(i,pool)&&state.workflow.wallpapers.includes(i.id)&&state.workflow.photo_crops[i.id]&&P.reviewed(state,i.source_id,pool)&&state.workflow.photo_reviews[i.source_id].image_id===i.id).map(i=>({...i,crop:state.workflow.photo_crops[i.id],geometry:P.wallpaperGeometry(i.width,i.height,state.workflow.photo_crops[i.id]),filename:'Toskana-2027-16zu9/'+i.id+'.jpg'}));}
   $('pw-city').innerHTML='<option value="">Alle Orte</option>'+[...new Map(sources.map(s=>[s.place_slug,s.place])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'de')).map(([slug,name])=>`<option value="${esc(slug)}">${esc(name)}</option>`).join('');
-  const params=new URLSearchParams(location.search);city=params.get('ort')||'';if(!sources.some(s=>s.place_slug===city))city='';current=params.get('foto')||'';$('pw-city').value=city;
+  const params=new URLSearchParams(location.search);city=params.get('ort')||'';if(!sources.some(s=>s.place_slug===city))city='';current=params.get('foto')||'';$('pw-city').value=city;search=(params.get('suche')||'').toLowerCase().trim();$('pw-search').value=search;
   $('pw-city').addEventListener('change',e=>{city=e.target.value;render();});$('pw-filter').addEventListener('change',e=>{filter=e.target.value;render();});$('pw-search').addEventListener('input',e=>{search=e.target.value.toLowerCase().trim();render();});
   $('pw-source-list').addEventListener('click',e=>{const b=e.target.closest('[data-source]');if(b&&!busy){current=b.dataset.source;render();}});
   $('pw-variants').addEventListener('click',e=>{const b=e.target.closest('[data-art]');if(!b||busy)return;const d=currentDraft(),item=byId.get(b.dataset.art),rec=suggestions.variants[item.id],v=state.instagram.items[item.id];variantCrops.set(d.id,clone(d.crop));d.id=item.id;d.crop=clone(variantCrops.get(item.id)||state.workflow.photo_crops[item.id]||rec.crop);d.format=v?.format||rec.format;d.final_frame=v?.final_frame||'full';setDirty();render();});
@@ -150,6 +150,7 @@
       // Detect another tab's edits before handing off a now-stale export.
       busy=false;await assertFresh();busy=true;
       const encoder=new TextEncoder();files.push({name:'Toskana-2027-16zu9/Manifest.json',data:encoder.encode(JSON.stringify({year:2027,revision:state.workflow.revision,images:rows},null,2))});
+      files.push({name:'Toskana-2027-16zu9/Danke-und-Spenden.txt',data:encoder.encode($('download-donation-text').textContent.trim()+'\n')});
       download('Toskana-2027-16zu9.zip',new Blob([I.createZip(files)],{type:'application/zip'}));$('pw-export-status').textContent=`${rows.length} geprüfte 16:9-Bilder mit Manifest als ZIP heruntergeladen.`;
     }catch(e){alert(e.message);}finally{busy=false;renderStatus();}
   });

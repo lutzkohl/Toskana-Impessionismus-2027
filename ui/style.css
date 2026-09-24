@@ -27,3 +27,5 @@
 .donation-option .donation-button{margin-top:auto;min-height:46px;text-align:center}
 .donation-separation{margin-top:24px;font-size:13px;color:var(--muted);max-width:none}
 @media(max-width:750px){.donation-heading{grid-template-columns:1fr;gap:24px}.donation-logo{width:160px;grid-row:1}.donation-options{grid-template-columns:1fr}.donation-option{padding:22px}.donation-section{padding:30px 0;margin-bottom:36px}.donation-button{width:100%}}
+
+.download-donation{margin:1.5rem 0 2rem;padding:1.5rem 1.7rem;border:1px solid #d9d1be;border-radius:14px;background:#f4efdf}.download-donation h3{margin:0 0 .7rem}.download-donation p{max-width:80ch;line-height:1.6}.download-donation-note{font-size:.9rem;color:#5f6252}.download-donation a{display:inline-block;margin:.3rem 1.5rem .3rem 0;text-underline-offset:3px}

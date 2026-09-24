@@ -13,6 +13,7 @@
     await store.assertFresh();
     if(!store.valid()||store.revision()!==revision||JSON.stringify(store.ids())!==snapshot)throw Error('Die Auswahl wurde während des Exports geändert. Bitte erneut starten.');
     entries.push({name:'Auswahl.json',data:JSON.stringify(ids,null,2)},{name:'Manifest.json',data:JSON.stringify({version:1,type:'wallpaper-export',year:2027,uncropped:true,exported:manifest},null,2)},{name:'Liesmich.txt',data:'Unbeschnittene Arbeitskopien. Alle Bilder liegen in Bilder/. Nach dem manuellen 16:9-Zuschnitt entsteht das öffentliche Hintergrundpaket.\n'});
+    entries.push({name:'Danke-und-Spenden.txt',data:$('download-donation-text').textContent.trim()+'\n'});
     const blob=new Blob([I.createZip(entries)],{type:'application/zip'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Toskana-Hintergruende-Arbeitskopien.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status.textContent=items.length+' unbeschnittene Arbeitskopien als ZIP bereitgestellt.';}
   }catch(e){status.textContent=e.message;}finally{exporting=false;buttons();}
  }
