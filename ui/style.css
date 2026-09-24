@@ -45,3 +45,6 @@
 .donation-personal{margin-top:25px;max-width:80ch;font-size:14px;line-height:1.7;color:var(--muted)}.donation-personal strong{color:var(--ink)}
 .self-print{margin-top:34px;padding:30px;background:#edf0e7;border:1px solid var(--line);scroll-margin-top:24px}.self-print h3{font-size:29px;margin:10px 0 17px}.self-print>p:not(.eyebrow){max-width:88ch;font-size:14px;line-height:1.7;color:var(--muted)}.self-print .donation-note{font-size:12px!important;margin-top:18px}.self-print-actions{display:flex;flex-wrap:wrap;gap:12px;margin:23px 0}.self-print-actions .button{font-size:13px;text-align:center}
 @media(max-width:550px){.self-print{padding:23px 20px}.self-print-actions{flex-direction:column}.self-print-actions .button{width:100%}}
+
+/* Keep the domain wordmark readable beside the menu on small screens. */
+.site-header .brand{font-size:clamp(16px,4.8vw,24px);letter-spacing:-.035em}
