@@ -52,3 +52,6 @@
 
 /* Keep the domain wordmark readable on small screens. */
 .site-header .brand{font-size:clamp(16px,4.8vw,24px);letter-spacing:-.035em}
+
+/* Project facts remain ordinary readable HTML, including with JavaScript disabled. */
+.project-faq{max-width:960px;margin:0 auto;padding:15px 0 65px}.project-faq h2{font-size:clamp(28px,3.2vw,42px);margin:12px 0 28px}.project-faq details{border-top:1px solid var(--line)}.project-faq details:last-child{border-bottom:1px solid var(--line)}.project-faq summary{cursor:pointer;padding:21px 5px;font-weight:600;font-size:16px;line-height:1.6}.project-faq details>div{padding:0 5px 24px;max-width:78ch}.project-faq p{color:var(--muted);font-size:15px;line-height:1.8;margin-bottom:12px}.project-faq a{font-size:14px}.project-faq summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}

@@ -35,3 +35,7 @@ GitHub Pages liefert den Branch `main`, Ordner `/`, über die eigene Domain `tos
 ## Bildnachweise
 
 Historische Vorbilder und Werkquellen sind auf der jeweiligen Begleitseite angegeben. Die KI-Interpretationen sind neue Bilder und keine Werke der genannten Maler. Eigene Reiseaufnahmen stammen aus dem Kalenderprojekt. Für die eigenen Fotos wird hier keine allgemeine Nachnutzungslizenz erteilt.
+
+## Suchmaschinen und KI-Suche
+
+Titel, Beschreibungen, Canonical-Adressen, Social-Media-Vorschauen und JSON-LD entstehen beim Export aus den veröffentlichten Inhalten. Die Sitemap nennt ausschließlich Besucherseiten und die Bildgeschichten der veröffentlichten Kalender- und Downloadmotive. Gestaltungswerkzeuge, übrige Bildvarianten, Monatsentwürfe und rechtliche Hilfsseiten tragen `noindex, follow`; sie bleiben erreichbar. `robots.txt` erlaubt das Lesen der Seiten und Assets, damit auch die Indexierungshinweise gesehen werden. Die ergänzende `llms.txt` fasst öffentlich sichtbare Projektfakten, Bildnachweise und Downloadwege zusammen. Sie ist kein Rankingversprechen. Die FAQ und Angaben zu freiwilligen Spenden werden aus der Kalenderkonfiguration gepflegt.
