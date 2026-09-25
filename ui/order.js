@@ -53,6 +53,8 @@
     const counts = [Number(data.get('quantityA3')),Number(data.get('quantityA2'))];
     const details = document.createElement('p');
     details.textContent = `${data.get('firstName').trim()} ${data.get('lastName').trim()}\n${data.get('street').trim()}${data.get('addressExtra').trim() ? '\n' + data.get('addressExtra').trim() : ''}\n${data.get('postalCode')} ${data.get('city').trim()}\nDeutschland\n${data.get('email').trim()}\n\n${wishSummary(counts)}`;
+    const comment = String(data.get('comment') || '').trim();
+    if (comment) details.textContent += `\n\nDein Kommentar:\n${comment}`;
     document.getElementById('review-details').replaceChildren(details);
     document.getElementById('review-note').textContent = endpointReady ? 'Mit „Kalenderwunsch senden“ übermittelst du deine Anfrage. Verfügbarkeit und Versand stimmen wir anschließend mit dir ab. Du kannst einen Kalender auch ohne Spende anfragen.' : 'Die Annahme von Kalenderwünschen ist noch nicht geöffnet. Deine Angaben wurden nicht gespeichert oder versendet. Du kannst einen Kalender auch ohne Spende anfragen.';
     resetSendButton();
