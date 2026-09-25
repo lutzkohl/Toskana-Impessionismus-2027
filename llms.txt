@@ -31,7 +31,7 @@ Ja. Kostenlose PDF-Vorlagen in A4, A3 und A2 quer enthalten jeweils alle 14 Blä
 
 ### Gibt es die Bilder auch für den Bildschirm?
 
-Ja. Die ausgewählten 16:9-Bilder gibt es als kostenloses ZIP für Hintergrundbilder und Bildschirmschoner. Die 13 Kalendermotive stehen als separates ZIP bereit. Dazu kommen Hochkantbilder für iPhone und Android in einem gemeinsamen Smartphone-Set mit 1440 × 3200 Pixeln sowie ein QR-Hintergrund zum Teilen der Website. Die Downloadseite zeigt Bildanzahl, Vorschauen und Anleitungen.
+Ja. Die ausgewählten 16:9-Bilder gibt es als kostenloses ZIP für Hintergrundbilder und Bildschirmschoner. Die 13 Kalendermotive stehen als separates ZIP bereit. Dazu kommen Hochkantbilder für iPhone und Android in einem gemeinsamen Smartphone-Set mit 1440 × 3200 Pixeln. Die Downloadseite zeigt Bildanzahl, Vorschauen und Anleitungen.
 [Bildpakete und Anleitung öffnen](https://toskanaimpressionismus.art/bildschirm/)
 
 ## Downloads
@@ -39,7 +39,6 @@ Ja. Die ausgewählten 16:9-Bilder gibt es als kostenloses ZIP für Hintergrundbi
 - [16:9-Bildpaket](https://toskanaimpressionismus.art/downloads/bildschirm/Toskana-2027-Bildschirm-16zu9.zip): 96 Bilder.
 - [Kalendermotive](https://toskanaimpressionismus.art/downloads/bildschirm/Toskana-2027-Kalendermotive.zip): 13 Bilder ohne Kalendarium.
 - [Smartphone-Bildpaket](https://toskanaimpressionismus.art/downloads/bildschirm/Toskana-2027-Smartphone.zip): 21 Hochkantmotive, 1440 × 3200 Pixel, für iPhone und Android.
-- [QR-Hintergrund](https://toskanaimpressionismus.art/downloads/bildschirm/Toskana-QR-iPhone.png): Projekticon und QR-Code zur Website, 1206 × 2622 Pixel.
 - [Selbstdruck A4](https://toskanaimpressionismus.art/downloads/Toskana-2027-Selbstdruck-A4.pdf): 14 Blätter im Querformat.
 - [Selbstdruck A3](https://toskanaimpressionismus.art/downloads/Toskana-2027-Selbstdruck-A3.pdf): 14 Blätter im Querformat.
 - [Selbstdruck A2](https://toskanaimpressionismus.art/downloads/Toskana-2027-Selbstdruck-A2.pdf): 14 Blätter im Querformat.
