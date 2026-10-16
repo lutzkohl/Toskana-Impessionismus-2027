@@ -45,3 +45,5 @@ Titel, Beschreibungen, Canonical-Adressen, Social-Media-Vorschauen und JSON-LD e
 ## Download-Ergänzung vom 02.10.2026
 
 Die Downloadseite enthält 127 Bilder in 16:9 und 30 Smartphone-Hintergründe: ergänzt sind 21 bestätigte Florenz-Ausschnitte und vier Florenz-Hochkantmotive. Die bisherigen Bilder und das Kalenderpaket bleiben unverändert. Das 16:9-Gesamtpaket wird wegen seiner Dateigröße als GitHub-Release-Asset unter `bildschirm-20261002` bereitgestellt und direkt von der Website verlinkt. Bei künftigen Website-Exports diesen öffentlichen Downloadlink erhalten; die lokale Werkstatt verwendet weiterhin ihr lokales ZIP.
+
+Stand 16.10.2026: Hintergründe mit unkenntlich gemachten Gesichtern sind aus den Downloads entfernt. Die Downloadseite enthält jetzt 107 Bilder in 16:9 (Release `bildschirm-20261016`) und 26 Smartphone-Hintergründe. Alle übrigen Bilder bleiben bytegleich.
